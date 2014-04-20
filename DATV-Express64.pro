@@ -16,7 +16,8 @@ HEADERS  += mainwindow.h \
     Sources/an_capture.h \
     Sources/si570.h \
     Sources/dvb_buffer.h \
-    Sources/mp_desc.h
+    Sources/mp_desc.h \
+    Sources/mp_config.h
 
 FORMS    += mainwindow.ui
 
