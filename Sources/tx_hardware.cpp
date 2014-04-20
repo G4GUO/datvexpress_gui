@@ -9,7 +9,7 @@
 #include "dvb_uhd.h"
 #include "dvb_gen.h"
 
-pthread_t m_transmit_thread;
+static pthread_t m_transmit_thread;
 static double m_tx_rate;
 static sys_config m_config;
 int m_carrier; // If set will transmit only a carrier
