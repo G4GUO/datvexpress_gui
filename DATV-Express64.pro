@@ -15,7 +15,8 @@ HEADERS  += mainwindow.h \
     DVB-C/dvb_c.h \
     Sources/an_capture.h \
     Sources/si570.h \
-    Sources/dvb_buffer.h
+    Sources/dvb_buffer.h \
+    Sources/mp_desc.h
 
 FORMS    += mainwindow.ui
 
