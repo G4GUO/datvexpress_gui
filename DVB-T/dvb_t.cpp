@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include "dvb_gen.h"
 #include "dvb_t.h"
-#include "dvb_fastfir.h"
 #include "dvb.h"
 #include "dvb_capture_ctl.h"
 
