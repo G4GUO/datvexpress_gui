@@ -23,6 +23,7 @@
 // Externally located variables
 extern int m_i_fd;
 extern snd_pcm_t *m_audio_handle;
+
 // Local variables
 static int m_image_size;
 static AVPacket        m_avpkt[4];
