@@ -1083,7 +1083,7 @@ int express_send_buffer( dvb_buffer *b )
 {
     int res;
 
-    while( m_xfrs_in_progress > (N_USB_TX_BUFFS/4))
+    while( m_xfrs_in_progress > (N_USB_TX_BUFFS/2))
     {
         libusb_handle_events(m_usbctx);
     }
