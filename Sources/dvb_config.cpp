@@ -91,7 +91,7 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->tx_level         = 10;
     cfg->video_pid        = P1_VID_PID;
     cfg->audio_pid        = P1_AUD_PID;
-    cfg->pcr_pid          = P1_PCR_PID;
+    cfg->pcr_pid          = P1_VID_PID;
     cfg->pmt_pid          = P1_MAP_PID;
     cfg->ebu_data_pid     = P1_DATA_PID;
     strcpy(cfg->ebu_teletext_file_name,"teletext.pes");

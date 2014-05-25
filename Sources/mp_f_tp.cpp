@@ -83,7 +83,7 @@ void add_pes_stuff_bytes( uchar *b, int n )
 // This is for PES packets in transport streams
 //
 
-int f_send_pes_first( uchar *b, int pid, uchar c, bool pcr )
+int f_send_pes_first_tp( uchar *b, int pid, uchar c, bool pcr )
 {
     int  len;
     tp_hdr hdr;
@@ -116,7 +116,7 @@ int f_send_pes_first( uchar *b, int pid, uchar c, bool pcr )
     tx_write_transport_queue_elementary( m_tp_pkt );
     return (TP_LEN-len);
 }
-int f_send_pes_next( uchar *b, int pid, uchar c, bool pcr )
+int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
 {
     int  len;
     tp_hdr hdr;
@@ -151,7 +151,7 @@ int f_send_pes_next( uchar *b, int pid, uchar c, bool pcr )
     return (TP_LEN-len);
 }
 
-int f_send_pes_last( uchar *b, int bytes, int pid, uchar c )
+int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
 {
     int  len,stuff;
     tp_hdr hdr;
@@ -164,10 +164,26 @@ int f_send_pes_last( uchar *b, int bytes, int pid, uchar c )
     hdr.transport_scrambling_control = 0;
     hdr.adaption_field_control       = 0x03;//Adaption and payload
     hdr.continuity_counter           = c;
-    len = tp_fmt( m_tp_pkt, &hdr );
+
+    if( pcr == true )
+    {
+        // Adaption and payload (PCR)
+        hdr.adaption_field_control  = 0x03;
+        len = tp_fmt( m_tp_pkt, &hdr );
+        // Add PCR field
+        len += pcr_fmt( &m_tp_pkt[len], 0 );
+    }
+    else
+    {
+        // Payload only
+        hdr.adaption_field_control  = 0x01;
+        len = tp_fmt( m_tp_pkt, &hdr );
+    }
+    // Add the stuff
     stuff = TP_LEN-(len+bytes);
     add_pes_stuff_bytes( m_tp_pkt, stuff );
     len += stuff;
+    // Add the payload
     memcpy( &m_tp_pkt[len], b, bytes );
     tx_write_transport_queue_elementary( m_tp_pkt );
     return stuff;
@@ -200,14 +216,14 @@ void f_send_pes_seq( uchar *b, int length, int pid, uchar &count )
     // First packet in sequence
     payload_remaining = length;
     offset            = 0;
-    f_send_pes_first( b, pid, count, 0 );
+    f_send_pes_first_tp( b, pid, count, 0 );
     count = (count+1)%16;
     payload_remaining = length - 178;
     offset            += (178);
 
     while( payload_remaining >= PES_PAYLOAD_LENGTH )
     {
-        f_send_pes_next( &b[offset], pid, count, false );
+        f_send_pes_next_tp( &b[offset], pid, count, false );
         payload_remaining -= PES_PAYLOAD_LENGTH;
         offset            += PES_PAYLOAD_LENGTH;
         count = (count+1)%16;
@@ -215,7 +231,7 @@ void f_send_pes_seq( uchar *b, int length, int pid, uchar &count )
 
     if( payload_remaining > 0 )
     {
-        f_send_pes_last( &b[offset], payload_remaining, pid, count );
+        f_send_pes_last_tp( &b[offset], payload_remaining, pid, count, false );
         count = (count+1)%16;
     }
 }

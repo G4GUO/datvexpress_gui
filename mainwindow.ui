@@ -935,7 +935,7 @@
         <widget class="QLineEdit" name="lineEditAudioPID"/>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEditDataPID"/>
+        <widget class="QLineEdit" name="lineEditPCRPID"/>
        </item>
       </layout>
      </widget>
@@ -973,7 +973,7 @@
        <item>
         <widget class="QLabel" name="label_21">
          <property name="text">
-          <string>Data PID</string>
+          <string>PCR PID</string>
          </property>
         </widget>
        </item>

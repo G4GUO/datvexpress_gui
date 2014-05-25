@@ -371,8 +371,8 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     ui->lineEditAudioPID->setText(st);
     st.setNum(cfg.video_pid);
     ui->lineEditVideoPID->setText(st);
-    st.setNum(cfg.ebu_data_pid);
-    ui->lineEditDataPID->setText(st);
+    st.setNum(cfg.pcr_pid);
+    ui->lineEditPCRPID->setText(st);
 
     // Program info
     ui->lineEditServiceProvider->setText(cfg.service_provider_name);
@@ -695,8 +695,8 @@ void MainWindow::on_pushButtonApplyTPInfo_clicked()
     dvb_set_VideoPid( st.toInt() );
     st = ui->lineEditAudioPID->text();
     dvb_set_AudioPid( st.toInt() );
-    st = ui->lineEditDataPID->text();
-    dvb_set_DataPid( st.toInt() );
+    st = ui->lineEditPCRPID->text();
+    dvb_set_PcrPid( st.toInt() );
 }
 
 void MainWindow::on_pushButtonApplyEPG_clicked()

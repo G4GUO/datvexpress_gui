@@ -39,6 +39,7 @@ snd_pcm_t *m_audio_handle;
 sem_t capture_sem;
 int m_video_seq;
 int m_audio_seq;
+int m_pcr_seq;
 
 // Local variables
 static bool m_cap_update;

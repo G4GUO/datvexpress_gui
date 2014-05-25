@@ -26,6 +26,7 @@ extern snd_pcm_t *m_audio_handle;
 extern sem_t capture_sem;
 extern int m_video_seq;
 extern int m_audio_seq;
+extern int m_pcr_seq;
 
 uchar m_b[2048];
 
@@ -246,78 +247,83 @@ info.pcr_pid = info.video_pid;
 //
 // Returns the number of stuff bytes that have been added
 //
-int cap_video_pes_to_ts( void )
+void cap_video_pes_to_ts( void )
 {
     int payload_remaining;
-    int stuff;
     sys_config info;
     uchar b[188];
     dvb_config_get( &info );
-    stuff = 0;
     int len = pes_get_length();
     // First packet in sequence
     // The bytes read (from the capture device) is the number of bytes available for a payload
     // in the first transport packet. this will include an adaptation field
     // containing the PCR derived from the last SCR and bitstream updates
-    int overhead;
-    bool ph = is_pcr_update();
-    if( ph == true )
-        overhead = (4 + 8);
-    else
-        overhead = (4);
+    int overhead       = 4;
+    bool ph            = false;
+    bool pcr_in_video  = false;
+
+    if(info.video_pid == info.pcr_pid)
+    {
+        pcr_in_video  = true;
+        ph = is_pcr_update();
+        if(ph == true) overhead = (4 + 8);
+    }
+
     pes_read( b, TP_LEN - overhead);
 
-    payload_remaining = len - f_send_pes_first( b, info.video_pid, m_video_seq, ph);// Add adaption field
+    payload_remaining = len - f_send_pes_first_tp( b, info.video_pid, m_video_seq, ph);// Add adaption field
     m_video_seq = (m_video_seq+1)&0x0F;
 
     // Send the middle
     while( payload_remaining >= PES_PAYLOAD_LENGTH )
     {
-        bool ph = is_pcr_update();
+        ph = false;
+
+        if(pcr_in_video  == true )
+        {
+            ph = is_pcr_update();
+        }
         if( ph == true )
             overhead = (4 + 8);
         else
-            overhead = (4);
+            overhead = 4;
 
         pes_read( b, TP_LEN - overhead);
-        payload_remaining -= f_send_pes_next( b, info.video_pid, m_video_seq, ph );
+        payload_remaining -= f_send_pes_next_tp( b, info.video_pid, m_video_seq, ph );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
     // Send the last
     if( payload_remaining > 0 )
     {
         pes_read( b, payload_remaining);
-        stuff = f_send_pes_last( b, payload_remaining, info.video_pid, m_video_seq );
+        f_send_pes_last_tp( b, payload_remaining, info.video_pid, m_video_seq, false );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
-    return stuff;
 }
 //
 // Create transport packets from the program stream pulled from the audio input
 //
 // Returns the number of stuff bytes that have been added.
 //
-int cap_audio_pes_to_ts( void )
+void cap_audio_pes_to_ts( void )
 {
 	int payload_remaining;
-    int stuff;
     sys_config info;
     uchar b[188];
     dvb_config_get( &info );
-    stuff = 0;
     int len = pes_get_length();
     // First packet in sequence
     int overhead = 4;
     pes_read( b, TP_LEN - overhead);
     payload_remaining = len - (TP_LEN - overhead);
 
-    f_send_pes_first( b, info.audio_pid, m_audio_seq, false );
+    f_send_pes_first_tp( b, info.audio_pid, m_audio_seq, false );
     m_audio_seq = (m_audio_seq+1)&0x0F;
 
 	while( payload_remaining >= PES_PAYLOAD_LENGTH )
 	{
         pes_read( b,  PES_PAYLOAD_LENGTH );
-        f_send_pes_next( b, info.audio_pid, m_audio_seq, false );
+        f_send_pes_next_tp( b, info.audio_pid, m_audio_seq, false );
         m_audio_seq = (m_audio_seq+1)&0x0F;
         payload_remaining -= PES_PAYLOAD_LENGTH;
 	}
@@ -325,11 +331,31 @@ int cap_audio_pes_to_ts( void )
 	if( payload_remaining > 0 )
 	{
         pes_read( b, payload_remaining );
-        stuff = f_send_pes_last( b, payload_remaining, info.audio_pid, m_audio_seq );
+        f_send_pes_last_tp( b, payload_remaining, info.audio_pid, m_audio_seq, false );
         m_audio_seq = (m_audio_seq+1)&0x0F;
 	}
-    return stuff;
 }
+//
+// Send a pcr ts packet if needed
+//
+void cap_pcr_to_ts( void )
+{
+    uchar b[188];
+    sys_config info;
+    dvb_config_get( &info );
+
+    bool ph            = false;
+
+    if( info.video_pid != info.pcr_pid )
+    {
+        ph = is_pcr_update();
+        if( ph == true )
+        {
+            f_send_pes_last_tp( b, 0, info.pcr_pid, m_pcr_seq, ph );
+        }
+    }
+}
+
 int last_stream;
 //
 // Parse the program stream coming from the capture card
@@ -400,6 +426,7 @@ int cap_parse_program_instream( void )
             haup_pvr_video_packet();
             pes_process();
             // Add a PCR when needed
+            cap_pcr_to_ts();
             cap_video_pes_to_ts();
             cap_video_present();
             // Get ready for next PES packet
@@ -419,6 +446,7 @@ int cap_parse_program_instream( void )
             // Do any required extra processing
             haup_pvr_audio_packet();
             pes_process();
+            cap_pcr_to_ts();
             cap_audio_pes_to_ts();
             cap_audio_present();
             // Get ready for next PES packet

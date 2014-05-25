@@ -212,9 +212,9 @@ int  tp_pat_fmt( uchar *b, tp_pat *p );
 void set_cont_counter( uchar *b, uchar c );
 
 // Send PES as a series of transport packets
-int f_send_pes_first( uchar *b, int pid, uchar c, bool pcr );
-int f_send_pes_next( uchar *b,  int pid, uchar c, bool pcr );
-int f_send_pes_last( uchar *b, int bytes, int pid, uchar c );
+int f_send_pes_first_tp( uchar *b, int pid, uchar c, bool pcr );
+int f_send_pes_next_tp( uchar *b,  int pid, uchar c, bool pcr );
+int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr );
 //void f_send_tp_with_adaption_no_payload( int pid, int c );
 //int  send_pcr_tp(void);
 

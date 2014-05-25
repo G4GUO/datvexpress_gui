@@ -9,7 +9,6 @@
 // The PCR field is sent in the adaption field and can be added to any
 // transport frame.
 
-uchar m_pcr_seq;
 uchar pcr_pkt[DVBS_T_CODED_FRAME_LEN+10];
 
 int adaption_fmt( uchar *b, tp_adaption *a )
