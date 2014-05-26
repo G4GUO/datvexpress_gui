@@ -19,6 +19,8 @@
 //#include "Transcoder.h"
 #include "an_capture.h"
 
+extern const sys_config m_sysc;
+
 extern int m_i_fd;
 #ifdef _USE_SW_CODECS
 extern snd_pcm_t *m_audio_handle;
@@ -250,9 +252,7 @@ info.pcr_pid = info.video_pid;
 void cap_video_pes_to_ts( void )
 {
     int payload_remaining;
-    sys_config info;
     uchar b[188];
-    dvb_config_get( &info );
     int len = pes_get_length();
     // First packet in sequence
     // The bytes read (from the capture device) is the number of bytes available for a payload
@@ -262,7 +262,7 @@ void cap_video_pes_to_ts( void )
     bool ph            = false;
     bool pcr_in_video  = false;
 
-    if(info.video_pid == info.pcr_pid)
+    if(m_sysc.video_pid == m_sysc.pcr_pid)
     {
         pcr_in_video  = true;
         ph = is_pcr_update();
@@ -271,7 +271,7 @@ void cap_video_pes_to_ts( void )
 
     pes_read( b, TP_LEN - overhead);
 
-    payload_remaining = len - f_send_pes_first_tp( b, info.video_pid, m_video_seq, ph);// Add adaption field
+    payload_remaining = len - f_send_pes_first_tp( b, m_sysc.video_pid, m_video_seq, ph);// Add adaption field
     m_video_seq = (m_video_seq+1)&0x0F;
 
     // Send the middle
@@ -289,14 +289,14 @@ void cap_video_pes_to_ts( void )
             overhead = 4;
 
         pes_read( b, TP_LEN - overhead);
-        payload_remaining -= f_send_pes_next_tp( b, info.video_pid, m_video_seq, ph );
+        payload_remaining -= f_send_pes_next_tp( b, m_sysc.video_pid, m_video_seq, ph );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
     // Send the last
     if( payload_remaining > 0 )
     {
         pes_read( b, payload_remaining);
-        f_send_pes_last_tp( b, payload_remaining, info.video_pid, m_video_seq, false );
+        f_send_pes_last_tp( b, payload_remaining, m_sysc.video_pid, m_video_seq, false );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
 }
@@ -308,22 +308,20 @@ void cap_video_pes_to_ts( void )
 void cap_audio_pes_to_ts( void )
 {
 	int payload_remaining;
-    sys_config info;
     uchar b[188];
-    dvb_config_get( &info );
     int len = pes_get_length();
     // First packet in sequence
     int overhead = 4;
     pes_read( b, TP_LEN - overhead);
     payload_remaining = len - (TP_LEN - overhead);
 
-    f_send_pes_first_tp( b, info.audio_pid, m_audio_seq, false );
+    f_send_pes_first_tp( b, m_sysc.audio_pid, m_audio_seq, false );
     m_audio_seq = (m_audio_seq+1)&0x0F;
 
 	while( payload_remaining >= PES_PAYLOAD_LENGTH )
 	{
         pes_read( b,  PES_PAYLOAD_LENGTH );
-        f_send_pes_next_tp( b, info.audio_pid, m_audio_seq, false );
+        f_send_pes_next_tp( b, m_sysc.audio_pid, m_audio_seq, false );
         m_audio_seq = (m_audio_seq+1)&0x0F;
         payload_remaining -= PES_PAYLOAD_LENGTH;
 	}
@@ -331,7 +329,7 @@ void cap_audio_pes_to_ts( void )
 	if( payload_remaining > 0 )
 	{
         pes_read( b, payload_remaining );
-        f_send_pes_last_tp( b, payload_remaining, info.audio_pid, m_audio_seq, false );
+        f_send_pes_last_tp( b, payload_remaining, m_sysc.audio_pid, m_audio_seq, false );
         m_audio_seq = (m_audio_seq+1)&0x0F;
 	}
 }
@@ -341,17 +339,15 @@ void cap_audio_pes_to_ts( void )
 void cap_pcr_to_ts( void )
 {
     uchar b[188];
-    sys_config info;
-    dvb_config_get( &info );
 
     bool ph            = false;
 
-    if( info.video_pid != info.pcr_pid )
+    if( m_sysc.video_pid != m_sysc.pcr_pid )
     {
         ph = is_pcr_update();
         if( ph == true )
         {
-            f_send_pes_last_tp( b, 0, info.pcr_pid, m_pcr_seq, ph );
+            f_send_pes_last_tp( b, 0, m_sysc.pcr_pid, m_pcr_seq, ph );
         }
     }
 }

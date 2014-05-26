@@ -119,6 +119,7 @@ void hw_freq( double freq )
 {
     switch(m_config.tx_hardware)
     {
+    case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
     case HW_EXPRESS_TS:
@@ -133,6 +134,7 @@ void hw_level( float gain )
 {
     switch(m_config.tx_hardware)
     {
+    case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
     case HW_EXPRESS_TS:
@@ -145,6 +147,7 @@ void hw_sample_rate( double rate )
 {
     switch(m_config.tx_hardware)
     {
+    case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
     case HW_EXPRESS_TS:
@@ -158,6 +161,7 @@ void hw_config( double freq, float lvl)
 {
     switch(m_config.tx_hardware)
     {
+    case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
     case HW_EXPRESS_TS:
@@ -172,6 +176,7 @@ void hw_config( double freq, float lvl)
 void hw_set_interp_and_filter( int rate )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
+       (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
        (m_config.tx_hardware == HW_EXPRESS_8) ||
        (m_config.tx_hardware == HW_EXPRESS_TS) )
     {
@@ -220,6 +225,7 @@ void hw_setup_channel(void)
 
     // Call the right configuration dependent on hardware
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
+       (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
        (m_config.tx_hardware == HW_EXPRESS_8)  ||
        (m_config.tx_hardware == HW_EXPRESS_TS) )
      {
@@ -262,12 +268,20 @@ int hw_init( void )
     // Call the right configuration dependent on hardware
     switch( m_config.tx_hardware )
     {
+    case HW_EXPRESS_AUTO :
+        if(m_config.dvb_mode == MODE_DVBS )
+            if((res = express_init("datvexpress8.ihx","datvexpressdvbs.rbf"))== EXP_OK) hw_setup_channel();
+        if(m_config.dvb_mode == MODE_DVBS2 )
+            if((res = express_init("datvexpress16.ihx","datvexpress.rbf"))   == EXP_OK) hw_setup_channel();
+        if(m_config.dvb_mode == MODE_DVBT )
+            if((res = express_init("datvexpress16.ihx","datvexpress.rbf"))   == EXP_OK) hw_setup_channel();
+        break;
     case HW_EXPRESS_16 :
     case HW_EXPRESS_8  :
-        if((res = express_init("datvexpress16.ihx","datvexpress.rbf"))==EXP_OK)hw_setup_channel();
+        if((res = express_init("datvexpress16.ihx","datvexpress.rbf"))==EXP_OK) hw_setup_channel();
         break;
     case HW_EXPRESS_TS:
-        if((res = express_init("datvexpress8.ihx","datvexpressdvbs.rbf"))==EXP_OK)hw_setup_channel();
+        if((res = express_init("datvexpress8.ihx","datvexpressdvbs.rbf"))==EXP_OK) hw_setup_channel();
         break;
     case HW_EXPRESS_UDP:
         res = EXP_OK;
@@ -290,6 +304,7 @@ int hw_get_carrier( void )
 void hw_tx( void )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
+       (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
        (m_config.tx_hardware == HW_EXPRESS_8) ||
        (m_config.tx_hardware == HW_EXPRESS_TS) )
     {
@@ -299,6 +314,7 @@ void hw_tx( void )
 void hw_rx( void )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
+       (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
        (m_config.tx_hardware == HW_EXPRESS_8) ||
        (m_config.tx_hardware == HW_EXPRESS_TS) )
     {

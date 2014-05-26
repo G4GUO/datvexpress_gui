@@ -1143,6 +1143,11 @@ int express_send_dvb_buffer( dvb_buffer *b )
         // Decide which format we are using
         switch( m_config.tx_hardware )
         {
+        case HW_EXPRESS_AUTO:
+            if(m_config.dvb_mode == MODE_DVBS2)express_convert_to_8_bit_samples( b );
+            if(m_config.dvb_mode == MODE_DVBT)express_convert_to_16_bit_samples( b );
+            res = express_send_buffer( b );
+            break;
         case HW_EXPRESS_16:
             express_convert_to_16_bit_samples( b );
             res = express_send_buffer( b );

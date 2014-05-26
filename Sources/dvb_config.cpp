@@ -16,7 +16,7 @@
 #include "mp_ts_ids.h"
 #include "mp_tp.h"
 
-static sys_config m_sysc;
+sys_config m_sysc;
 static char config_file[1024];
 
 

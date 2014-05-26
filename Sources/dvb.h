@@ -24,6 +24,7 @@
 #define S_DVB_C    "DVB-C"
 #define S_DVB_T    "DVB-T"
 #define S_DVB_T2   "DVB-T2"
+#define S_EXPRESS_AUTO "Express Auto"
 #define S_EXPRESS_16 "Express 16 bit"
 #define S_EXPRESS_8  "Express 8 bit"
 #define S_EXPRESS_TS "Express TS"

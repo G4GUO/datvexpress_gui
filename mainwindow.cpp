@@ -167,6 +167,7 @@ void MainWindow::InitialUpdateDisplayedDVBParams(void)
 #endif
 
     // Transmitter Hardware
+    ui->comboBoxTransmitterHWType->addItem(S_EXPRESS_AUTO);
     ui->comboBoxTransmitterHWType->addItem(S_EXPRESS_16);
     ui->comboBoxTransmitterHWType->addItem(S_EXPRESS_8);
     ui->comboBoxTransmitterHWType->addItem(S_EXPRESS_TS);
@@ -579,6 +580,8 @@ void MainWindow::on_pushButtonApplyVideoCapture_clicked()
     QString str = ui->comboBoxTransmitterHWType->currentText();
 
     // Save the transmitter hardware type
+    if( str == S_EXPRESS_AUTO )
+        dvb_set_tx_hardware_type( HW_EXPRESS_AUTO, S_EXPRESS_AUTO );
     if( str == S_EXPRESS_16 )
         dvb_set_tx_hardware_type( HW_EXPRESS_16, S_EXPRESS_16 );
     if( str == S_EXPRESS_8 )

@@ -94,7 +94,7 @@ void pmt_fmt( int video_stream_type, int audio_stream_type )
     pmt.section_number           = 0;
     pmt.last_section_number      = 0;
 
-    pmt.pcr_pid                  = info.video_pid;
+    pmt.pcr_pid                  = info.pcr_pid;
     pmt.nr_elementary_streams    = 2;
 
     pmt.stream[0].stream_type    = video_stream_type;
