@@ -102,7 +102,7 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->capture_device_type  = DVB_V4L;
     cfg->capture_device_input = 1;
     cfg->video_codec_type     = CODEC_MPEG2;
-    cfg->tx_hardware          = HW_EXPRESS_16;
+    cfg->tx_hardware          = HW_EXPRESS_AUTO;
 
     strcpy(cfg->service_provider_name,"HamTV");
     strcpy(cfg->service_name,"Channel 1");

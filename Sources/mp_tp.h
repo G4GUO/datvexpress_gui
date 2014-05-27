@@ -214,7 +214,8 @@ void set_cont_counter( uchar *b, uchar c );
 // Send PES as a series of transport packets
 int f_send_pes_first_tp( uchar *b, int pid, uchar c, bool pcr );
 int f_send_pes_next_tp( uchar *b,  int pid, uchar c, bool pcr );
-int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr );
+int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c );
+int f_send_pes_pcr_tp( int pid, uchar c );
 //void f_send_tp_with_adaption_no_payload( int pid, int c );
 //int  send_pcr_tp(void);
 
@@ -228,7 +229,7 @@ void f_create_si_seq( tp_si_seq *cblk );
 //
 // PCR fields
 //
-int pcr_fmt( uchar *b, int stuff );
+int pcr_fmt( uchar *b );
 void pcr_timestamp( uchar *b );
 
 

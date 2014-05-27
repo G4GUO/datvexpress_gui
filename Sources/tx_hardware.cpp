@@ -224,9 +224,9 @@ void hw_setup_channel(void)
     express_fpga_reset();
 
     // Call the right configuration dependent on hardware
-    if((m_config.tx_hardware == HW_EXPRESS_16) ||
+    if((m_config.tx_hardware == HW_EXPRESS_16)   ||
        (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
-       (m_config.tx_hardware == HW_EXPRESS_8)  ||
+       (m_config.tx_hardware == HW_EXPRESS_8)    ||
        (m_config.tx_hardware == HW_EXPRESS_TS) )
      {
         if( m_config.dvb_mode == MODE_DVBS )

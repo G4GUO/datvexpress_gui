@@ -26,7 +26,7 @@ int adaption_fmt( uchar *b, tp_adaption *a )
 
     return 1;
 }
-int pcr_fmt( uchar *b, int stuff )
+int pcr_fmt( uchar *b )
 {
     int len;
     tp_adaption apt;
@@ -47,12 +47,6 @@ int pcr_fmt( uchar *b, int stuff )
 
     // Now add the PCR field
     len += add_pcr_field( &b[len] );
-
-    // PAD out the stuff bytes
-    for( int i = 0; i < stuff; i++ )
-    {
-         b[len++] = 0xFF;
-    }
     b[0] = len-1;// Encode the length of the adaption field
     return len;
 }

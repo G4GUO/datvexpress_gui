@@ -26,9 +26,9 @@ extern int m_i_fd;
 extern snd_pcm_t *m_audio_handle;
 #endif
 extern sem_t capture_sem;
-extern int m_video_seq;
-extern int m_audio_seq;
-extern int m_pcr_seq;
+static int m_video_seq;
+static int m_audio_seq;
+static int m_pcr_seq;
 
 uchar m_b[2048];
 
@@ -262,7 +262,7 @@ void cap_video_pes_to_ts( void )
     bool ph            = false;
     bool pcr_in_video  = false;
 
-    if(m_sysc.video_pid == m_sysc.pcr_pid)
+    if( m_sysc.video_pid == m_sysc.pcr_pid )
     {
         pcr_in_video  = true;
         ph = is_pcr_update();
@@ -277,16 +277,15 @@ void cap_video_pes_to_ts( void )
     // Send the middle
     while( payload_remaining >= PES_PAYLOAD_LENGTH )
     {
-        ph = false;
+        overhead = 4;
+        ph       = false;
 
         if(pcr_in_video  == true )
         {
-            ph = is_pcr_update();
+           ph = is_pcr_update();
         }
-        if( ph == true )
-            overhead = (4 + 8);
-        else
-            overhead = 4;
+
+        if( ph == true ) overhead = (4 + 8);
 
         pes_read( b, TP_LEN - overhead);
         payload_remaining -= f_send_pes_next_tp( b, m_sysc.video_pid, m_video_seq, ph );
@@ -296,7 +295,7 @@ void cap_video_pes_to_ts( void )
     if( payload_remaining > 0 )
     {
         pes_read( b, payload_remaining);
-        f_send_pes_last_tp( b, payload_remaining, m_sysc.video_pid, m_video_seq, false );
+        f_send_pes_last_tp( b, payload_remaining, m_sysc.video_pid, m_video_seq );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
 }
@@ -329,7 +328,7 @@ void cap_audio_pes_to_ts( void )
 	if( payload_remaining > 0 )
 	{
         pes_read( b, payload_remaining );
-        f_send_pes_last_tp( b, payload_remaining, m_sysc.audio_pid, m_audio_seq, false );
+        f_send_pes_last_tp( b, payload_remaining, m_sysc.audio_pid, m_audio_seq );
         m_audio_seq = (m_audio_seq+1)&0x0F;
 	}
 }
@@ -347,7 +346,8 @@ void cap_pcr_to_ts( void )
         ph = is_pcr_update();
         if( ph == true )
         {
-            f_send_pes_last_tp( b, 0, m_sysc.pcr_pid, m_pcr_seq, ph );
+            f_send_pes_pcr_tp( m_sysc.pcr_pid, m_pcr_seq );
+            m_pcr_seq = (m_pcr_seq+1)&0x0F;
         }
     }
 }

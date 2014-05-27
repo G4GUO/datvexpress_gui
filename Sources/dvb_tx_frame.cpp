@@ -48,18 +48,21 @@ void dvb_tx_encode_and_transmit_tp( uchar *tp )
     //
     switch( m_tx_hardware )
     {
-    case HW_EXPRESS_TS:
+    case HW_EXPRESS_AUTO:
+        if( m_dvb_mode == MODE_DVBS )
         {
-            if( m_dvb_mode == MODE_DVBS )
-            {
-                write_final_tx_queue_ts( tp );
-                if(below_null_threshold()) write_final_tx_queue_ts(get_padding_null_dvb());
-            }
+            write_final_tx_queue_ts( tp );
+            if(below_null_threshold()) write_final_tx_queue_ts(get_padding_null_dvb());
         }
-        break;
-    case HW_EXPRESS_UDP:
+        if( m_dvb_mode == MODE_DVBS2 )
         {
-            if( m_dvb_mode == MODE_DVBS ) write_final_tx_queue_udp( tp );
+            dvb_s2_encode_tp( tp );
+            if(below_null_threshold()) dvb_s2_encode_tp(get_padding_null_dvb());
+        }
+        if( m_dvb_mode == MODE_DVBT )
+        {
+            dvb_t_encode_and_modulate( tp, m_dibit );
+            if(below_null_threshold()) dvb_t_encode_and_modulate(get_padding_null_dvb(), m_dibit);
         }
         break;
     case HW_EXPRESS_16:
@@ -83,6 +86,20 @@ void dvb_tx_encode_and_transmit_tp( uchar *tp )
                 break;
             default:
                 break;
+        }
+        break;
+    case HW_EXPRESS_TS:
+        {
+            if( m_dvb_mode == MODE_DVBS )
+            {
+                write_final_tx_queue_ts( tp );
+                if(below_null_threshold()) write_final_tx_queue_ts(get_padding_null_dvb());
+            }
+        }
+        break;
+    case HW_EXPRESS_UDP:
+        {
+            if( m_dvb_mode == MODE_DVBS ) write_final_tx_queue_udp( tp );
         }
         break;
     default:

@@ -149,6 +149,7 @@ int dvb_initialise_system(void)
     hw_config( cfg.tx_frequency, 0 );
 
     if((cfg.tx_hardware == HW_EXPRESS_16)||
+       (cfg.tx_hardware == HW_EXPRESS_AUTO)||
        (cfg.tx_hardware == HW_EXPRESS_8)||
        (cfg.tx_hardware == HW_EXPRESS_TS)||
        (cfg.tx_hardware == HW_EXPRESS_UDP))

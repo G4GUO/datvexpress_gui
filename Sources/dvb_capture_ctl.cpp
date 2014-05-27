@@ -37,9 +37,6 @@ snd_pcm_t *m_audio_handle;
 #endif
 
 sem_t capture_sem;
-int m_video_seq;
-int m_audio_seq;
-int m_pcr_seq;
 
 // Local variables
 static bool m_cap_update;
@@ -606,8 +603,6 @@ int dvb_cap_init( void )
     {
         m_cap_status = 0;
         dvb_cap_ctl(m_i_fd);
-        m_video_seq = 0;
-        m_audio_seq = 0;
         cap_purge();
     }
     else

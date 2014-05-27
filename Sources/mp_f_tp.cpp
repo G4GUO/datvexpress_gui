@@ -102,7 +102,7 @@ int f_send_pes_first_tp( uchar *b, int pid, uchar c, bool pcr )
         hdr.adaption_field_control  = 0x03;
         len = tp_fmt( m_tp_pkt, &hdr );
         // Add PCR field
-        len += pcr_fmt( &m_tp_pkt[len], 0 );
+        len += pcr_fmt( &m_tp_pkt[len] );
         // Add the payload
         memcpy( &m_tp_pkt[len], b, TP_LEN-len );
     }
@@ -127,7 +127,6 @@ int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
     hdr.transport_priority           = 0 ;
     hdr.pid                          = pid;
     hdr.transport_scrambling_control = 0;
-    hdr.adaption_field_control       = 0x01;
     hdr.continuity_counter           = c;
 
     if( pcr == true )
@@ -136,7 +135,7 @@ int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
         hdr.adaption_field_control  = 0x03;
         len = tp_fmt( m_tp_pkt, &hdr );
         // Add PCR field
-        len += pcr_fmt( &m_tp_pkt[len], 0 );
+        len += pcr_fmt( &m_tp_pkt[len] );
         // Add the payload
         memcpy( &m_tp_pkt[len], b, TP_LEN-len );
     }
@@ -151,7 +150,7 @@ int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
     return (TP_LEN-len);
 }
 
-int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
+int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c )
 {
     int  len,stuff;
     tp_hdr hdr;
@@ -162,23 +161,10 @@ int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
     hdr.transport_priority           = 0 ;
     hdr.pid                          = pid;
     hdr.transport_scrambling_control = 0;
-    hdr.adaption_field_control       = 0x03;//Adaption and payload
     hdr.continuity_counter           = c;
 
-    if( pcr == true )
-    {
-        // Adaption and payload (PCR)
-        hdr.adaption_field_control  = 0x03;
-        len = tp_fmt( m_tp_pkt, &hdr );
-        // Add PCR field
-        len += pcr_fmt( &m_tp_pkt[len], 0 );
-    }
-    else
-    {
-        // Payload only
-        hdr.adaption_field_control  = 0x01;
-        len = tp_fmt( m_tp_pkt, &hdr );
-    }
+    hdr.adaption_field_control  = 0x03;//Adaption and Payload
+    len = tp_fmt( m_tp_pkt, &hdr );
     // Add the stuff
     stuff = TP_LEN-(len+bytes);
     add_pes_stuff_bytes( m_tp_pkt, stuff );
@@ -188,10 +174,11 @@ int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
     tx_write_transport_queue_elementary( m_tp_pkt );
     return stuff;
 }
-void f_send_tp_with_adaption_no_payload( int pid, int c )
+int f_send_pes_pcr_tp( int pid, uchar c )
 {
-    int  len;
+    int  len,afl;
     tp_hdr hdr;
+
     // Header
     hdr.transport_error_indicator    = 0;
     hdr.payload_unit_start_indicator = 0;
@@ -199,12 +186,18 @@ void f_send_tp_with_adaption_no_payload( int pid, int c )
     hdr.pid                          = pid;
     hdr.transport_scrambling_control = 0;
     hdr.continuity_counter           = c;
-    // Adaption and payload (PCR)
-    hdr.adaption_field_control  = 0x02;
+    hdr.adaption_field_control       = 0x02;//Adaption only
     len = tp_fmt( m_tp_pkt, &hdr );
-    // Add PCR field and pad it out
-    len += pcr_fmt( &m_tp_pkt[len], 176 );
+    afl = len;
+    // Add PCR field
+    len += pcr_fmt( &m_tp_pkt[len]  );
+    m_tp_pkt[afl] = 183;// Special case fof afc = 0x02
+    for( int i = len ; i < TP_LEN; i++ )
+    {
+        m_tp_pkt[i] = 0xFF;
+    }
     tx_write_transport_queue_elementary( m_tp_pkt );
+    return TP_LEN;
 }
 //
 // Send a sequence of PES packets, normally from a file
@@ -231,7 +224,7 @@ void f_send_pes_seq( uchar *b, int length, int pid, uchar &count )
 
     if( payload_remaining > 0 )
     {
-        f_send_pes_last_tp( &b[offset], payload_remaining, pid, count, false );
+        f_send_pes_last_tp( &b[offset], payload_remaining, pid, count );
         count = (count+1)%16;
     }
 }

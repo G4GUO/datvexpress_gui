@@ -5,7 +5,8 @@
 #include "dvb_buffer.h"
 
 #define USB_VENDOR     0x4B4
-#define USB_PROD       0x8613
+//#define USB_PROD       0x8613
+#define USB_PROD       0x8615
 // Both are out for in add 0x80
 #define EP1OUT         0x01
 #define EP1IN          0x81
