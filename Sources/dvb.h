@@ -17,7 +17,7 @@
 
 //#define _USE_SW_CODECS
 
-#define S_VERSION    "2.01"
+#define S_VERSION    "2.02"
 
 #define S_DVB_S    "DVB-S"
 #define S_DVB_S2   "DVB-S2"
