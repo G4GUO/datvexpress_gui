@@ -434,7 +434,7 @@ int cap_parse_program_instream( void )
             len = cap_get_len( &m_b[4] );
 //printf("  Audio %d bytes\n",len);
             // Save the header
-          pes_write_from_memory( m_b, 6 );
+            pes_write_from_memory( m_b, 6 );
             // Save the elementary payload
 //            pes_write_from_memory( a->b, a->l );
             pes_write_from_capture( len );
