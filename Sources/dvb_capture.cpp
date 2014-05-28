@@ -28,7 +28,6 @@ extern snd_pcm_t *m_audio_handle;
 extern sem_t capture_sem;
 static int m_video_seq;
 static int m_audio_seq;
-static int m_pcr_seq;
 
 uchar m_b[2048];
 
@@ -346,8 +345,7 @@ void cap_pcr_to_ts( void )
         ph = is_pcr_update();
         if( ph == true )
         {
-            f_send_pes_pcr_tp( m_sysc.pcr_pid, m_pcr_seq );
-            m_pcr_seq = (m_pcr_seq+1)&0x0F;
+            f_send_pes_pcr_tp( m_sysc.pcr_pid, 0 );
         }
     }
 }

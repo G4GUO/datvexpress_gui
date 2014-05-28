@@ -378,7 +378,6 @@ void dvb_cap_ctl( int fd )
         {
             loggerf("CAP Error VIDIOC_S_INPUT %d",input);
         }
-
 /*
         // v4l2-ctl --set-fmt-video=width=720,height=576
         // Use the defaults for your region determined by Linux
