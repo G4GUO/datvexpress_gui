@@ -806,7 +806,17 @@ void express_set_config_byte( void )
     dvb_config_get( &info );
 
     val = 0;
-    if(info.tx_hardware == HW_EXPRESS_16 ) val |= FPGA_16BIT_MODE;
+    //
+    // Assume 8 bit mode unless told otherwise
+    //
+    if( info.tx_hardware == HW_EXPRESS_AUTO )
+    {
+        if(info.dvb_mode == MODE_DVBT )  val |= FPGA_16BIT_MODE;
+    }
+    else
+    {
+        if(info.tx_hardware == HW_EXPRESS_16 ) val |= FPGA_16BIT_MODE;
+    }
     if(m_si570_fitted == true )            val |= FPGA_USE_SI570;
     // Send it
     msg[0]  = FPGA_ADD | I2C_WR;
@@ -1144,8 +1154,8 @@ int express_send_dvb_buffer( dvb_buffer *b )
         switch( m_config.tx_hardware )
         {
         case HW_EXPRESS_AUTO:
-            if(m_config.dvb_mode == MODE_DVBS2)express_convert_to_8_bit_samples( b );
-            if(m_config.dvb_mode == MODE_DVBT)express_convert_to_16_bit_samples( b );
+            if(m_config.dvb_mode == MODE_DVBS2) express_convert_to_8_bit_samples( b );
+            if(m_config.dvb_mode == MODE_DVBT) express_convert_to_16_bit_samples( b );
             res = express_send_buffer( b );
             break;
         case HW_EXPRESS_16:
