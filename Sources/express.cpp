@@ -1275,9 +1275,7 @@ int express_init( const char *fx2_filename, const char *fpga_filename)
     express_set_attenuator_level( 47 );
     express_wait();
     // Set the operating frequency
-    sys_config cfg;
-    dvb_config_get( &cfg );
-    express_set_freq( cfg.tx_frequency );
+    express_set_freq( m_config.tx_frequency );
     express_wait();
 
     // Load the configuration byte
@@ -1304,7 +1302,10 @@ int express_init( const char *fx2_filename, const char *fpga_filename)
 //   express_write_24c64( 46, bb, 1 );
 //   bb[0] = 0;
 
-   express_read_24c64( 32, 16 );
+//   express_read_24c64( 32, 16 );
+
+   express_wait();
+   express_receive();
 
     return m_express_status;
 }
