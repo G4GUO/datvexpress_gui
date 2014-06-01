@@ -55,7 +55,6 @@ SOURCES += main.cpp \
     Sources/dvb_conv.cpp \
     Sources/dvb_timer.cpp \
     Sources/dvb_config.cpp \
-    Sources/dvb_viewport.cpp \
     Sources/dvb_time.cpp \
     Sources/dvb_teletext.cpp \
     Sources/dvb_ts_if.cpp \

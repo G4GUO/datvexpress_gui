@@ -17,6 +17,7 @@
 #include "dvb_s2_if.h"
 
 using namespace std;
+extern int m_final_txq_len;
 
 static sem_t tp_sem;
 
@@ -49,7 +50,7 @@ int flow_read_null_count( void )
 }
 int tx_queue_percentage(void)
 {
-    return ((final_tx_queue_size()*100)/N_TX_BUFFS);
+    return ((final_tx_queue_size()*100)/m_final_txq_len);
 }
 //
 // This transmits the SI tables necessary for a single ts.

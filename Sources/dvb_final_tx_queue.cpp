@@ -15,8 +15,12 @@
 #include "dvb_config.h"
 #include "tx_hardware.h"
 #include "dvb_buffer.h"
+#include "dvb_capture_ctl.h"
+#include "../DVB-T/dvb_t.h"
 
 using namespace std;
+int m_final_txq_len;
+extern const sys_config m_sysc;
 
 static sem_t f_txq_sem;
 
@@ -49,7 +53,7 @@ double final_txq_time_delay( void )
 int final_tx_queue_percentage_unprotected( void )
 {
     // return as a percentage
-    int ival = (m_tx_q.size()*100)/N_TX_BUFFS;
+    int ival = (m_tx_q.size()*100)/m_final_txq_len;
     return (ival);
 }
 //
@@ -71,7 +75,7 @@ void write_final_tx_queue( scmplx* samples, int length )
     sem_wait( &f_txq_sem );
     int i;
 
-    if( m_tx_q.size() < N_TX_BUFFS)
+    if( m_tx_q.size() < m_final_txq_len)
     {
         for( i = 0; i < (length - TX_BUFFER_LENGTH); i += TX_BUFFER_LENGTH )
         {
@@ -94,7 +98,7 @@ void write_final_tx_queue_ts( uchar* tp )
 {
     sem_wait( &f_txq_sem );
 
-    if( m_tx_q.size() < N_TX_BUFFS)
+    if( m_tx_q.size() < m_final_txq_len)
     {
         dvb_buffer *b = dvb_buffer_alloc( 188, BUF_TS );
         dvb_buffer_write( b, tp );
@@ -107,7 +111,7 @@ void write_final_tx_queue_udp( uchar* tp )
 {
     sem_wait( &f_txq_sem );
 
-    if( m_tx_q.size() < N_TX_BUFFS)
+    if( m_tx_q.size() < m_final_txq_len)
     {
         dvb_buffer *b = dvb_buffer_alloc( 188, BUF_UDP );
         dvb_buffer_write( b, tp );
@@ -140,6 +144,36 @@ dvb_buffer *read_final_tx_queue(void)
 }
 void create_final_tx_queue( void )
 {
+    calculate_video_bitrate();
+
+    if((m_sysc.tx_hardware == HW_EXPRESS_AUTO)||(m_sysc.tx_hardware == HW_EXPRESS_TS))
+    {
+        if(m_sysc.dvb_mode == MODE_DVBS )
+        {
+            m_final_txq_len = get_raw_bitrate()/(204*8);
+        }
+    }
+    else
+    {
+        if(m_sysc.dvb_mode == MODE_DVBS )
+        {
+             m_final_txq_len = (double)m_sysc.sr_mem[m_sysc.sr_mem_nr]/TX_BUFFER_LENGTH;
+        }
+    }
+    if(m_sysc.tx_hardware == HW_EXPRESS_TS)
+    {
+        m_final_txq_len = get_raw_bitrate()/(204*8);
+    }
+    if(m_sysc.dvb_mode == MODE_DVBS2 )
+    {
+         m_final_txq_len = (double)m_sysc.sr_mem[m_sysc.sr_mem_nr]/TX_BUFFER_LENGTH;
+    }
+    if(m_sysc.dvb_mode == MODE_DVBT )
+    {
+         m_final_txq_len = dvb_t_get_sample_rate()/TX_BUFFER_LENGTH;
+    }
+//    printf("Queue length %d\n",m_final_txq_len);
+
     sem_init( &f_txq_sem, 0, 0 );
     sem_post( &f_txq_sem );
 }

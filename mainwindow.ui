@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>686</width>
-    <height>351</height>
+    <width>691</width>
+    <height>364</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -35,7 +35,7 @@
       <x>10</x>
       <y>0</y>
       <width>671</width>
-      <height>341</height>
+      <height>331</height>
      </rect>
     </property>
     <property name="tabPosition">

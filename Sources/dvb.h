@@ -82,8 +82,7 @@
 
 
 // Final buffering queue. these are blocks of samples
-#define N_TX_BUFFS       10000
-#define TX_BUFFER_LENGTH 4096
+#define TX_BUFFER_LENGTH 512
 // Delays to get the HAUPAUGE to work
 #define PVR_VIDEO_DELAY 0.01
 #define PVR_PCR_DELAY   0.2

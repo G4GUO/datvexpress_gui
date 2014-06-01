@@ -118,7 +118,7 @@ int calculate_video_bitrate( void )
     double s_rate = 0;
     double twiddle;
 
-    switch( info.dvb_mode)
+    switch(info.dvb_mode)
     {
     case MODE_DVBS:
         s_rate = calculate_s_raw_bitrate( &info );
@@ -126,7 +126,7 @@ int calculate_video_bitrate( void )
         m_bits_in_transport_packet = 204.0;
         // Approx Overhead due to transport packets
         s_rate = s_rate*((188.0-5.0)/204.0);
-        twiddle = 0.90;
+        twiddle = 0.92;
         break;
     case MODE_DVBS2:
         s_rate = calculate_s2_raw_bitrate( &info );
@@ -134,7 +134,7 @@ int calculate_video_bitrate( void )
         m_raw_bitrate = s_rate;
         m_bits_in_transport_packet = 188.0;
         s_rate = s_rate*((188.0-5.0)/m_bits_in_transport_packet);
-        twiddle = 0.90;
+        twiddle = 0.92;
         break;
     case MODE_DVBT:
         s_rate = dvb_t_raw_bitrate();
@@ -142,7 +142,7 @@ int calculate_video_bitrate( void )
         m_bits_in_transport_packet = 188.0;
         // Approx Overhead due to transport packets
         s_rate = s_rate*((188.0-5.0)/m_bits_in_transport_packet);
-        twiddle = 0.90;
+        twiddle = 0.92;
         break;
     default:
         twiddle = 1.0;
@@ -151,7 +151,7 @@ int calculate_video_bitrate( void )
     // Fixed audio bitrate
     s_rate -= 192000.0;
     // SI overhead
-    s_rate -= 35000;
+    s_rate -= 400000;
     // Twiddle
     s_rate = s_rate*twiddle;
     return (int)s_rate;
