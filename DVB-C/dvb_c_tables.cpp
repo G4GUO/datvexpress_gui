@@ -5,7 +5,7 @@
 //
 // 16 QAM constellation table
 //
-#define DVB_C_16_COR (0x7FFF*0.707/3.0)
+#define DVB_C_16_COR (short)(0x7FFF*0.707/3.0)
 
 scmplx dvb_c_qam16[16] =
 {

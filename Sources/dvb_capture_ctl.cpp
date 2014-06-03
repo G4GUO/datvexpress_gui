@@ -151,7 +151,7 @@ int calculate_video_bitrate( void )
     // Fixed audio bitrate
     s_rate -= 192000.0;
     // SI overhead
-    s_rate -= 400000;
+    s_rate -= 100000;
     // Twiddle
     s_rate = s_rate*twiddle;
     return (int)s_rate;
