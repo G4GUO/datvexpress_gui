@@ -19,11 +19,10 @@
 #include "../DVB-T/dvb_t.h"
 
 using namespace std;
-int m_final_txq_len;
+unsigned int m_final_txq_len;
 extern const sys_config m_sysc;
 
 static sem_t f_txq_sem;
-
 static queue <dvb_buffer *> m_tx_q;
 
 //

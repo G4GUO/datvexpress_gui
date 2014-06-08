@@ -41,6 +41,9 @@ static pthread_t dvb_thread[5];
 static sem_t dvb_sem;
 static sem_t dvb_rx_block_sem;
 
+static bool m_input_device_ok;
+static bool m_output_device_ok;
+
 void dvb_block_rx_check( void )
 {
     struct timespec tim;
@@ -164,14 +167,11 @@ int dvb_initialise_system(void)
 
     if( cfg.capture_device_type == DVB_UDP_TS )
     {
-        if( udp_init() >= 0 )
+        // Create the UDP receive socket for capture
+        res = pthread_create( &dvb_thread[1], NULL, udp_proc, NULL );
+        if( res!= 0 )
         {
-            // Create the UDP receive socket for capture
-            res = pthread_create( &dvb_thread[1], NULL, udp_proc, NULL );
-            if( res!= 0 )
-            {
-                logger("DVB Thread UDP creation failed");
-            }
+            logger("DVB Thread UDP creation failed");
         }
     }
 
@@ -227,11 +227,14 @@ int dvb_start( void )
 
     m_dvb_running = 0;// Not running yet
     m_dvb_capture_running = 0;
+    m_input_device_ok  = false;
+    m_output_device_ok = false;
 
     // Initial configuration
     dvb_config_retrieve_from_disk();
     sys_config cfg;
     dvb_config_get( &cfg );
+
     // Run all the module initialisation functions
     dvb_t_init();
     dvb_modulate_init();
@@ -252,15 +255,19 @@ int dvb_start( void )
     tp_file_logger_init();
     dvb_s2_start();// Must be called before cap is initialised
 
+    // Now configure the ouput devices
+
+    if( hw_tx_init() == EXP_OK )
+    {
+        m_output_device_ok = true;
+    }
+
+    // Now configure the capture device
+
     if( cfg.capture_device_type == DVB_UDP_TS )
     {
         // Using UDP input so no capture device required
-        if(hw_init()==EXP_OK)
-        {
-            dvb_initialise_system();
-            dvb_release_sem();
-            return(0);
-        }
+        if(udp_rx_init()==0) m_input_device_ok = true;
     }
 
     if( cfg.capture_device_type == DVB_V4L )
@@ -269,22 +276,23 @@ int dvb_start( void )
         // This maybe a hardware encoder or raw video input
         if(dvb_cap_init()==0)
         {
-            if(hw_init()==EXP_OK)
-            {
-                dvb_initialise_system();
-                dvb_release_sem();
-                return(0);
-            }
-            else
-            {
-                // failed to configure Express board so close unneeded capture device
-                dvb_close_capture_device();
-            }
+            m_input_device_ok = true;
         }            
     }
-    loggerf("Running in demo mode");
-    dvb_release_sem();
-    m_dvb_running = 0;
+
+    if((m_input_device_ok == true)&&( m_output_device_ok == true))
+    {
+        dvb_initialise_system();
+        dvb_release_sem();
+        return 0;
+    }
+    else
+    {
+        dvb_close_capture_device();
+        loggerf("Running in demo mode");
+        dvb_release_sem();
+        m_dvb_running = 0;
+    }
     return(-1);
 }
 //
@@ -331,12 +339,12 @@ int dvb_get_minor_txrx_status( void )
 //
 void dvb_set_major_txrx_status( int status )
 {
-    struct timespec tim;
+    //struct timespec tim;
     sys_config cfg;
     dvb_config_get( &cfg );
 
-    tim.tv_sec  = 0;
-    tim.tv_nsec = 50000000; // 50 ms
+    //tim.tv_sec  = 0;
+    //tim.tv_nsec = 50000000; // 50 ms
 
     if( status == DVB_RECEIVING)
     {
@@ -363,7 +371,7 @@ void dvb_set_major_txrx_status( int status )
     if( status == DVB_CALIBRATING )
     {
         m_dvb_major_txrx_status = status;// Stops output
-        hw_level(47);
+        hw_level(47);// Full output
         return;
     }
 }

@@ -249,10 +249,11 @@ void dvb_calibration(bool status, int mode)
     {
         dvb_set_major_txrx_status( DVB_CALIBRATING );
         dvb_set_minor_txrx_status( mode );
+        express_set_calibrate(true);
     }
     else
     {
-        dvb_set_major_txrx_status( DVB_RECEIVING );
+        express_set_calibrate(false);
     }
 }
 

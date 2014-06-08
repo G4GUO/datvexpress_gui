@@ -64,6 +64,9 @@ int udp_send_tp( dvb_buffer *b );
 // used to read from the UDP socket
 int udp_read( uchar *b, int length );
 uchar *udp_get_transport_packet(void);
-int udp_init( void );
+// Initialise UDP sender
+int udp_tx_init( void );
+// Initialise UDP receiver
+int udp_rx_init( void );
 
 #endif

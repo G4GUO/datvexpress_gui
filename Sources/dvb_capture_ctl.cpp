@@ -39,10 +39,11 @@ snd_pcm_t *m_audio_handle;
 sem_t capture_sem;
 
 // Local variables
-static bool m_cap_update;
+static bool   m_cap_update;
 static double m_raw_bitrate;
 static double m_bits_in_transport_packet;
-static int m_cap_status;
+static int    m_cap_status;
+static char   m_v4l_capture_device[80];
 
 double get_raw_bitrate( void )
 {
@@ -227,6 +228,46 @@ void dvb_cap_set_analog_standard( int fd, int std )
         standard.index++;
     }
 }
+//
+// Open the named capture device
+//
+int open_named_capture_device( const char *name )
+{
+    int fd;
+    struct v4l2_capability cap;
+
+    if(strcmp(name,"UDP") == 0 )
+    {
+        video_capture_stream_and_device_type( "udpts" );
+        return 0;
+    }
+    if(strcmp(name,"FIREWIRE") == 0 )
+    {
+        video_capture_stream_and_device_type( "firewire" );
+        return 0;
+    }
+    // Must be a /dev/video device
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        sprintf(m_v4l_capture_device,"/dev/video%d",i);
+        if((fd = open( m_v4l_capture_device, O_RDWR  )) > 0 )
+        {
+            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
+            {
+                if(strcmp(name,(const char*)cap.card) == 0)
+                {
+                    // Device found
+                    m_i_fd = fd;
+                    video_capture_stream_and_device_type( (const char*)cap.driver );
+                    return fd;
+                }
+            }
+            close(fd);
+        }
+    }
+    // We have not found a valid device
+    return -1;
+}
 
 //
 // Program or re-program the capture device
@@ -259,7 +300,7 @@ void dvb_cap_ctl( int fd )
     }
     else
     {
-        loggerf("Driver %s Card %s",cap.driver,cap.card);
+        loggerf("Driver: %s, Card: %s, Device: %s",cap.driver,cap.card,m_v4l_capture_device);
 //            if( cap.capabilities & V4L2_CAP_READWRITE) loggerf("R/W supported");
     }
 

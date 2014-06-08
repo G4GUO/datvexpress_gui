@@ -97,13 +97,23 @@ void *udp_proc( void * args)
 }
 
 */
-
+//
+// Send a transport packet over UDP to the client.
+//
 int udp_send_tp( dvb_buffer *b  )
 {
-    int res = sendto(m_tx_sock, b->b, b->len, 0,(struct sockaddr *) &m_udp_client, sizeof(m_udp_client));
+    int res;
+    if( dvb_get_major_txrx_status() == DVB_TRANSMITTING )
+    {
+        res = sendto(m_tx_sock, b->b, b->len, 0,(struct sockaddr *) &m_udp_client, sizeof(m_udp_client));
+    }
+    else
+    {
+        res = 0;
+    }
     dvb_buffer_free(b);
 //printf("res = %d\n",res);
-        return res;
+    return res;
 }
 
 //
@@ -178,18 +188,37 @@ uchar *udp_get_transport_packet(void)
 //
 // Initialise the UDP handler
 //
-int udp_init( void )
+int udp_tx_init( void )
+{
+    sys_config cfg;
+    dvb_config_get( &cfg );
+
+    // Create a socket for transmitting UDP TS packets
+    if ((m_tx_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
+        loggerf("Failed to create UDP TX socket");
+        return -1;
+    }
+    // Construct the client sockaddr_in structure
+    memset(&m_udp_client, 0, sizeof(m_udp_client));// Clear struct
+    m_udp_client.sin_family = AF_INET;             // Internet/IP
+    m_udp_client.sin_addr.s_addr = inet_addr(cfg.server_ip_address);  // IP address
+    m_udp_client.sin_port = htons(cfg.server_socket_number);          // server port
+
+    return 0;
+}
+int udp_rx_init( void )
 {
     sys_config cfg;
     dvb_config_get( &cfg );
 
     //socklen_t  m_udp_server_len = sizeof(m_udp_server);
-/*
-    // Create the UDP socket
+
+    // Create the UDP receive socket
     if ((m_rx_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         loggerf("Failed to create UDP RX socket");
-      //  return -1;
+        return -1;
     }
 
     // Construct the server sockaddr_in structure
@@ -202,26 +231,7 @@ int udp_init( void )
     if( bind(m_rx_sock, (struct sockaddr *)&m_udp_server, sizeof(m_udp_server))< 0)
     {
         loggerf("Failed to bind to RX socket");
-       // return -1;
-    }
-*/
-    if ((m_tx_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-    {
-        loggerf("Failed to create UDP TX socket");
         return -1;
     }
-
-    // Construct the client sockaddr_in structure
-    memset(&m_udp_client, 0, sizeof(m_udp_client));// Clear struct
-    m_udp_client.sin_family = AF_INET;             // Internet/IP
-    m_udp_client.sin_addr.s_addr = inet_addr(cfg.server_ip_address);  // IP address
-    m_udp_client.sin_port = htons(cfg.server_socket_number);          // server port
-
- //   if( bind(m_tx_sock, (struct sockaddr *)&m_udp_client, sizeof(m_udp_client))< 0)
-//    {
-//        loggerf("Failed to bind to TX socket");
-//        return -1;
-//    }
-
     return 0;
 }

@@ -52,6 +52,10 @@ VideoBuffer *video_delay(uchar *h, int l)
     // Return a delayed version
     return &m_vbuf[(m_vbp+(VIDEO_B_SIZE-delay))%VIDEO_B_SIZE];
 }
+ssize_t capture_read( void *b, size_t bytes)
+{
+    return read( m_i_fd, b, bytes );
+}
 
 //
 // This buffers the input stream
@@ -59,18 +63,18 @@ VideoBuffer *video_delay(uchar *h, int l)
 #define CAP_BUFF_LEN 64
 uchar cap_buffer[CAP_BUFF_LEN*2];
 int cap_offset;
-int buffered_read( int fd, uchar *b, int len )
+int buffered_read( uchar *b, int len )
 {
     for( int i = 0; i < len; i++ )
     {
         b[i] = cap_buffer[cap_offset++];
         if( cap_offset == CAP_BUFF_LEN)
         {
-            read( fd, cap_buffer, CAP_BUFF_LEN );
+            capture_read( cap_buffer, CAP_BUFF_LEN );
         }
         if( cap_offset == (CAP_BUFF_LEN*2))
         {
-            read( fd, &cap_buffer[CAP_BUFF_LEN], CAP_BUFF_LEN );
+            capture_read( &cap_buffer[CAP_BUFF_LEN], CAP_BUFF_LEN );
             cap_offset = 0;
         }
     }
@@ -110,8 +114,8 @@ void cap_rd_bytes( uchar *b, int len )
             if( m_i_fd > 0 )
             {
                 dvb_get_cap_sem();
-//               bytes = buffered_read( m_i_fd, &b[offset], req );
-                bytes=read( m_i_fd, &b[offset], req );
+//               bytes = buffered_read( &b[offset], req );
+                bytes=capture_read( &b[offset], req );
                 dvb_release_cap_sem();
 
                 if( bytes > 0 )
@@ -336,8 +340,6 @@ void cap_audio_pes_to_ts( void )
 //
 void cap_pcr_to_ts( void )
 {
-    uchar b[188];
-
     bool ph            = false;
 
     if( m_sysc.video_pid != m_sysc.pcr_pid )
@@ -524,9 +526,9 @@ void populate_video_capture_list( CaptureList *list )
     struct v4l2_capability cap;
     list->items = 0;
 
-    sprintf(list->item[list->items],"None");
+    sprintf(list->item[list->items],S_NONE);
     list->items++;
-    sprintf(list->item[list->items],"UDP");
+    sprintf(list->item[list->items],S_UDP_TS);
     list->items++;
 
     for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
@@ -548,9 +550,9 @@ void populate_video_capture_list( CaptureList *list )
         if( list->items == MAX_CAPTURE_LIST_ITEMS ) return;
     }
 }
+#ifdef _USE_SW_CODECS
 void populate_audio_capture_list( CaptureList *list )
 {
-#ifdef _USE_SW_CODECS
     char **hints;
     char *name;
     char *iod;
@@ -584,8 +586,8 @@ void populate_audio_capture_list( CaptureList *list )
             free(name);
         }
     }
-#endif
 }
+#endif
 
 //
 // Set the stream and device type from the driver
@@ -633,47 +635,6 @@ void video_capture_stream_and_device_type( const char *driver )
         info.video_codec_type    = CODEC_MPEG2;
     }
     dvb_config_save_to_local_memory( &info );
-}
-//
-// Open the named capture device
-//
-int open_named_capture_device( const char *name )
-{
-    char text[80];
-    int fd;
-    struct v4l2_capability cap;
-
-    if(strcmp(name,"UDP") == 0 )
-    {
-        video_capture_stream_and_device_type( "udpts" );
-        return 0;
-    }
-    if(strcmp(name,"FIREWIRE") == 0 )
-    {
-        video_capture_stream_and_device_type( "firewire" );
-        return 0;
-    }
-    // Must be a /dev/video device
-    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
-    {
-        sprintf(text,"/dev/video%d",i);
-        if((fd = open( text, O_RDWR  )) > 0 )
-        {
-            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
-            {
-                if(strcmp(name,(const char*)cap.card) == 0)
-                {
-                    // Device found
-                    m_i_fd = fd;
-                    video_capture_stream_and_device_type( (const char*)cap.driver );
-                    return fd;
-                }
-            }
-            close(fd);
-        }
-    }
-    // We have not found a valid device
-    return -1;
 }
 //
 // Signals whether audio and video elemetary stream is being

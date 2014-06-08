@@ -17,7 +17,7 @@ static int m_fc;
 
 void dvb_c_transmit_symbol( scmplx sym)
 {
-
+    sym.re = sym.re;
 }
 
 void dvb_c_256qam( uchar *b, int len )

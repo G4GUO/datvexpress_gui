@@ -14,6 +14,7 @@ static unsigned int          m_xfrs_in_progress;
 static int                   m_express_status;
 static int                   m_sample_block_size;
 static bool                  m_si570_fitted;
+static unsigned char         m_ancillary;
 static libusb_device_handle *m_handle;
 static libusb_context       *m_usbctx;
 static sem_t usb_sem;
@@ -1069,6 +1070,36 @@ void express_receive(void)
     express_i2c_bulk_transfer( EP1OUT, b, 2 );
     express_handle_events( 1 );
 }
+void express_ancillary( void )
+{
+    // Send it
+    uchar msg[3];
+    msg[0]  = FPGA_ADD | I2C_WR;
+    msg[1]  = FPGA_ANC_REG;
+    msg[2]  = m_ancillary;
+    express_i2c_bulk_transfer( EP1OUT, msg, 3 );
+    express_handle_events( 1 );
+}
+
+// Set clear carrier output
+void express_set_carrier( bool b)
+{
+    if(b == true )
+        m_ancillary = m_ancillary |   FPGA_CARRIER;
+    else
+        m_ancillary = m_ancillary & (~FPGA_CARRIER);
+    express_ancillary();
+}
+
+// Set/clear calibration output
+void express_set_calibrate( bool b)
+{
+    if(b == true )
+        m_ancillary = m_ancillary |   FPGA_CALIBRA;
+    else
+        m_ancillary = m_ancillary & (~FPGA_CALIBRA);
+    express_ancillary();
+}
 
 //
 // Service all pending transfer buffers, used when system is closing
@@ -1226,6 +1257,7 @@ int express_init( const char *fx2_filename, const char *fpga_filename)
 
     m_xfrs_in_progress = 0;
     m_si570_fitted = false;
+    m_ancillary = 0;
 
     dvb_config_get( &m_config );
 

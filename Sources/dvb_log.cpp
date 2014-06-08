@@ -6,9 +6,9 @@
 using namespace std;
 
 #define MAX_LOGS 20
-#define MAX_LOG_LEN 79
+#define MAX_LOG_LEN 132
 
-static char m_log_text[MAX_LOGS][80];
+static char m_log_text[MAX_LOGS][MAX_LOG_LEN];
 static int m_write_log_index;
 static int m_display_log_index;
 static char m_display_box_text[200];
@@ -37,7 +37,7 @@ void logger( char const *text )
 {
     char buff[100];
     time_t now = time (0);
-    strftime (buff, 100, "%Y-%m-%d %H:%M:%S ", localtime (&now));
+    strftime (buff, 1000, "%Y-%m-%d %H:%M:%S ", localtime (&now));
     strcat( buff, text );
     strncpy( m_log_text[m_write_log_index],buff,MAX_LOG_LEN );
     m_display_log_index = m_write_log_index;
@@ -51,7 +51,7 @@ void loggerf( char *fmt, ... )
     va_start(ap,fmt);
     vsprintf(temp,fmt,ap );
     va_end(ap);
-    temp[79] = 0;
+    temp[MAX_LOG_LEN-1] = 0;
     logger(temp);
 }
 void loggerf( const char *fmt, ... )
@@ -62,15 +62,19 @@ void loggerf( const char *fmt, ... )
     va_start(ap,fmt);
     vsprintf(temp,fmt,ap );
     va_end(ap);
-    temp[79] = 0;
+    temp[MAX_LOG_LEN-1] = 0;
     logger(temp);
 }
 void increment_display_log_index(void)
 {
+    int index;
     for( int i = 0; i < MAX_LOGS; i++ )
     {
-        m_display_log_index = (m_display_log_index + 1)%MAX_LOGS;
-        if(strlen(m_log_text[m_display_log_index]) > 0 ) break;
+        index = (m_display_log_index + 1)%MAX_LOGS;
+        if(strlen(m_log_text[index]) > 0 )
+            return;
+        else
+            m_display_log_index = index;
     }
     m_log_updated = 1;
 }

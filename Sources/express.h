@@ -53,11 +53,18 @@
 #define IRATE4        1
 #define IRATE8        2
 
+// Ancillary values
+#define FPGA_CARRIER 0x01
+#define FPGA_CALIBRA 0x02
+
 // DC offset registers
 #define FPGA_I_DC_MSB_REG 4
 #define FPGA_I_DC_LSB_REG 5
 #define FPGA_Q_DC_MSB_REG 6
 #define FPGA_Q_DC_LSB_REG 7
+
+// Ancillary register
+#define FPGA_ANC_REG      8
 
 // Symbol rate registers
 #define FPGA_SR_REG       10
@@ -120,5 +127,9 @@ void express_transmit(void);
 void express_receive(void);
 // Sets whether Si570 is in use
 void express_set_config_byte(void);
+// Set/clear carrier output
+void express_set_carrier( bool b);
+// Set/clear calibration output
+void express_set_calibrate( bool b);
 
 #endif // FX2USB_H

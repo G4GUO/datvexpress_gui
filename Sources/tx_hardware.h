@@ -8,7 +8,7 @@ void   hw_level( float gain );
 void   hw_sample_rate( double rate );
 void   hw_config( double freq, float lvl );
 void   hw_setup_channel(void);
-int    hw_init( void );
+int    hw_tx_init( void );
 void   hw_samples( scmplx *samples, int length );
 double hw_uniterpolated_sample_rate(void);
 void   hw_set_carrier( int status );

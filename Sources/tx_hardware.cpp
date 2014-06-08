@@ -9,7 +9,6 @@
 #include "dvb_uhd.h"
 #include "dvb_gen.h"
 
-static pthread_t m_transmit_thread;
 static double m_tx_rate;
 static sys_config m_config;
 int m_carrier; // If set will transmit only a carrier
@@ -31,24 +30,16 @@ void transmit_sideband( scmplx *samples, int len )
     }
 }
 
-void transmit_carrier( scmplx *samples, int len )
-{
-    for( int i = 0; i < len ;i++)
-    {
-        samples[i].re = 0x7FFF;
-        samples[i].im = 0x7FFF;
-    }
-}
 //
 // Transmit processing thread, called from main dvb module.
 //
 void hw_thread( void )
 {
     // Read from the queue
-    struct timespec tim;
+//    struct timespec tim;
 
-    tim.tv_sec = 0;
-    tim.tv_nsec = 1000;
+//    tim.tv_sec = 0;
+//    tim.tv_nsec = 1000;
 
     dvb_buffer *b = read_final_tx_queue();
 
@@ -68,30 +59,8 @@ void hw_thread( void )
 
     if(b->type == BUF_SCMPLX )
     {
-        scmplx *p =(scmplx *)b->b;
-
         if( b->len > 0 )
         {
-            // Must send something or the program spins
-            if((dvb_get_major_txrx_status() == DVB_RECEIVING) ||
-               (dvb_get_major_txrx_status() == DVB_CALIBRATING))
-            {
-                if( dvb_get_minor_txrx_status() == DVB_CALIBRATING_OFFSET )
-                {
-                    memset( p, 0, sizeof(scmplx)*(b->len));
-                }
-                if( dvb_get_minor_txrx_status() == DVB_CALIBRATING_GAIN )
-                {
-                    transmit_sideband( p, (b->len));
-                }
-            }
-            else
-            {
-                if( m_carrier )
-                {
-                    transmit_carrier( p, (b->len));
-                }
-            }
             // This will block on the USB queue until done
             express_send_dvb_buffer( b );
         }
@@ -258,7 +227,7 @@ void hw_setup_channel(void)
     m_tx_rate = srate;
 }
 
-int hw_init( void )
+int hw_tx_init( void )
 {
     int res  = -1;
 
@@ -284,8 +253,12 @@ int hw_init( void )
         if((res = express_init("datvexpress8.ihx","datvexpressdvbs.rbf"))==EXP_OK) hw_setup_channel();
         break;
     case HW_EXPRESS_UDP:
-        res = EXP_OK;
-        hw_setup_channel();
+        res= udp_tx_init();
+        if(res==0)
+        {
+            res = EXP_OK;
+            hw_setup_channel();
+        }
         break;
     }
     m_carrier = 0;
@@ -294,6 +267,11 @@ int hw_init( void )
 
 void hw_set_carrier( int status )
 {
+    if(status)
+        express_set_carrier(true);
+    else
+        express_set_carrier(false);
+
     m_carrier = status;
 }
 
