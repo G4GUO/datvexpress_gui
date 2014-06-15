@@ -151,6 +151,10 @@ int udp_read( uchar *b, int length )
     }
     return offset;
 }
+//
+// Called by process thread, will return a transport packet.
+// It will automatically align to the TP boundary.
+//
 uchar *udp_get_transport_packet(void)
 {
     int bytes = 0;

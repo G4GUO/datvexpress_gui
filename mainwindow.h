@@ -21,6 +21,7 @@ private:
     Ui::MainWindow *ui;
     QTimer *m_tx_timer;
     QString m_log;
+    QAction *captureAction;
     QAction *aboutAction;
     QAction *exitAction;
     QMenu *fileMenu;
@@ -34,6 +35,7 @@ public:
 
 private slots:
     void about();
+    void capture_config();
     void on_checkBoxCarrier_clicked();
     void on_pushButtonPTT_clicked();
     void on_pushButtonApplyDVBS2_clicked();

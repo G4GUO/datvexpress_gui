@@ -14,12 +14,6 @@
 #include "dvb.h"
 #include "dvb_capture_ctl.h"
 
-#define COFFS_PRESENT  1
-#define INPUT_PRESENT  2
-#define OUTPUT_PRESENT 4
-
-extern int m_i_fd;
-extern int m_o_fd;
 DVBTFormat m_format;
 
 //
@@ -120,4 +114,11 @@ void dvb_t_init( void )
 void dvb_t_re_init( void )
 {
     dvb_t_init();
+}
+//
+// Returns FFT resources
+//
+void dvb_t_deinit( void )
+{
+    deinit_dvb_t_fft();
 }

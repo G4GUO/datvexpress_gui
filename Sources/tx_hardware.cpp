@@ -91,8 +91,9 @@ void hw_freq( double freq )
     case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
-    case HW_EXPRESS_TS:
         express_set_freq( freq );
+        break;
+    case HW_EXPRESS_TS:
         break;
     }
     // select the right amplifiers etc
@@ -106,8 +107,9 @@ void hw_level( float gain )
     case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
-    case HW_EXPRESS_TS:
         express_set_level((int)gain);
+        break;
+    case HW_EXPRESS_TS:
         break;
     }
 }
@@ -119,8 +121,9 @@ void hw_sample_rate( double rate )
     case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
-    case HW_EXPRESS_TS:
         express_set_sr( rate );
+        break;
+    case HW_EXPRESS_TS:
         break;
     }
 }
@@ -133,9 +136,10 @@ void hw_config( double freq, float lvl)
     case HW_EXPRESS_AUTO:
     case HW_EXPRESS_16:
     case HW_EXPRESS_8:
-    case HW_EXPRESS_TS:
         express_set_freq( freq );
         express_set_level((int)lvl);
+        break;
+    case HW_EXPRESS_TS:
         break;
     }
 }
@@ -146,8 +150,7 @@ void hw_set_interp_and_filter( int rate )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
        (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
-       (m_config.tx_hardware == HW_EXPRESS_8) ||
-       (m_config.tx_hardware == HW_EXPRESS_TS) )
+       (m_config.tx_hardware == HW_EXPRESS_8) )
     {
         if( m_config.dvb_mode == MODE_DVBS )
         {
@@ -195,8 +198,7 @@ void hw_setup_channel(void)
     // Call the right configuration dependent on hardware
     if((m_config.tx_hardware == HW_EXPRESS_16)   ||
        (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
-       (m_config.tx_hardware == HW_EXPRESS_8)    ||
-       (m_config.tx_hardware == HW_EXPRESS_TS) )
+       (m_config.tx_hardware == HW_EXPRESS_8) )
      {
         if( m_config.dvb_mode == MODE_DVBS )
         {
@@ -283,8 +285,7 @@ void hw_tx( void )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
        (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
-       (m_config.tx_hardware == HW_EXPRESS_8) ||
-       (m_config.tx_hardware == HW_EXPRESS_TS) )
+       (m_config.tx_hardware == HW_EXPRESS_8) )
     {
         express_transmit();
     }
@@ -293,8 +294,7 @@ void hw_rx( void )
 {
     if((m_config.tx_hardware == HW_EXPRESS_16) ||
        (m_config.tx_hardware == HW_EXPRESS_AUTO) ||
-       (m_config.tx_hardware == HW_EXPRESS_8) ||
-       (m_config.tx_hardware == HW_EXPRESS_TS) )
+       (m_config.tx_hardware == HW_EXPRESS_8) )
     {
         express_receive();
     }

@@ -65,6 +65,7 @@ int eq_initialise( void )
     else
     {
 //        loggerf("Serial interface disabled\n");
+        m_eq_id = -1;
         return -1;
     }
 }
@@ -131,6 +132,7 @@ void eq_change_frequency( double freq )
 void eq_transmit( void )
 {
     char msg[5];
+    if(m_eq_id < 0) return;
     msg[0] = 'R';
     msg[1] = '0';
     msg[2] = '0';
@@ -141,6 +143,7 @@ void eq_transmit( void )
 void eq_receive( void )
 {
     char msg[5];
+    if(m_eq_id < 0) return;
     msg[0] = 'R';
     msg[1] = '0';
     msg[2] = '0';

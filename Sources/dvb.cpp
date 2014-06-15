@@ -106,6 +106,7 @@ void *udp_proc( void *arg )
     {
         uchar *tp = udp_get_transport_packet();
         if(tp != NULL) tx_write_transport_queue( tp );
+        sleep(0);
     }
     return arg;
 }
@@ -313,6 +314,8 @@ void dvb_stop( void )
     nanosleep( &tim, NULL);
     // Terminate all other processes
     m_dvb_running         = 0;
+    dvb_t_deinit();
+
     // Close the logging file
     tp_file_logger_stop();
     // Close the capture device
@@ -365,6 +368,7 @@ void dvb_set_major_txrx_status( int status )
         hw_level(cfg.tx_level);
         hw_freq(cfg.tx_frequency);
         m_dvb_major_txrx_status = status;
+        eq_transmit();
         return;
     }
 

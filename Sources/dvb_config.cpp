@@ -63,7 +63,9 @@ void dvb_config_save_to_disk(sys_config *cfg)
 //
 void dvb_default_configuration( sys_config *cfg)
 {
+
     memset( cfg, 0, sizeof(sys_config));
+    strcpy(cfg->version, S_VERSION );
     cfg->dvb_mode         = MODE_DVBS;
     cfg->sr_mem[0]        = 4000000;
     cfg->sr_mem[1]        = 2000000;
@@ -101,6 +103,7 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->capture_stream_type  = DVB_PROGRAM;
     cfg->capture_device_type  = DVB_V4L;
     cfg->capture_device_input = 1;
+    cfg->cap_format.video_format = CAP_AUTO;
     cfg->video_codec_type     = CODEC_MPEG2;
     cfg->tx_hardware          = HW_EXPRESS_AUTO;
 

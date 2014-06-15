@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QMessageBox>
 #include <QMenuBar>
+#include "capturedialog.h"
 #include "dvb.h"
 #include "dvb_gui_if.h"
 #include "DVB-T/dvb_t.h"
@@ -27,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::createActions()
 {
+    // Capture action
+    captureAction = new QAction(tr("Configure C&apture Device"), this);
+    connect(captureAction, SIGNAL(triggered()), this, SLOT(capture_config()));
     // Exit action
     exitAction = new QAction(tr("E&xit"), this);
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
@@ -39,6 +43,7 @@ void MainWindow::createMenus()
 {
     // File Menu
     fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(captureAction);
     fileMenu->addAction(exitAction);
 
     // Help Menu
@@ -53,6 +58,12 @@ void MainWindow::about()
     QMessageBox::information(this, tr("DATV-Express"),
                  str,
                  QMessageBox::Ok);
+}
+
+void MainWindow::capture_config()
+{
+    CaptureDialog capture;
+    if(capture.exec()) SettingsUpdateMessageBox();
 }
 
 void MainWindow::InitialUpdateDisplayedDVBParams(void)

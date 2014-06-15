@@ -1,6 +1,7 @@
 #include "math.h"
 #include <stdio.h>
 #include <memory.h>
+#include "fftw.h"
 #include "dvb.h"
 #include "dvb_t.h"
 
@@ -10,8 +11,8 @@ static fftw_plan    m_fftw_2k_plan;
 static fftw_plan    m_fftw_4k_plan;
 static fftw_plan    m_fftw_8k_plan;
 static fftw_plan    m_fftw_16k_plan;
-static fftw_complex m_fftw_in[M16KS];
-static fftw_complex m_fftw_out[M16KS];
+static fftw_complex *m_fftw_in;
+static fftw_complex *m_fftw_out;
 
 static void fft_2k( fftw_complex *in, fftw_complex *out )
 {
@@ -124,8 +125,32 @@ void init_dvb_t_fft( void )
     //
     // Plans
     //
-    m_fftw_2k_plan = fftw_create_plan(M2KS,FFTW_BACKWARD,FFTW_ESTIMATE );
-    m_fftw_4k_plan = fftw_create_plan(M4KS,FFTW_BACKWARD,FFTW_ESTIMATE );
-    m_fftw_8k_plan = fftw_create_plan(M8KS,FFTW_BACKWARD,FFTW_ESTIMATE);
-    m_fftw_16k_plan = fftw_create_plan(M16KS,FFTW_BACKWARD,FFTW_ESTIMATE);
+    FILE *fp;
+    if((fp=fopen(dvb_config_get_path("fftw_wisdom"),"r"))!=NULL)
+    {
+        fftw_import_wisdom_from_file(fp);
+        m_fftw_2k_plan  = fftw_create_plan(M2KS,  FFTW_BACKWARD, FFTW_USE_WISDOM);
+        m_fftw_4k_plan  = fftw_create_plan(M4KS,  FFTW_BACKWARD, FFTW_USE_WISDOM);
+        m_fftw_8k_plan  = fftw_create_plan(M8KS,  FFTW_BACKWARD, FFTW_USE_WISDOM);
+        m_fftw_16k_plan = fftw_create_plan(M16KS, FFTW_BACKWARD, FFTW_USE_WISDOM);
+        fftw_import_wisdom_from_file(fp);
+    }
+    else
+    {
+        if((fp=fopen(dvb_config_get_path("fftw_wisdom"),"w"))!=NULL)
+        {
+            m_fftw_2k_plan  = fftw_create_plan(M2KS,  FFTW_BACKWARD, FFTW_MEASURE | FFTW_USE_WISDOM);
+            m_fftw_4k_plan  = fftw_create_plan(M4KS,  FFTW_BACKWARD, FFTW_MEASURE | FFTW_USE_WISDOM);
+            m_fftw_8k_plan  = fftw_create_plan(M8KS,  FFTW_BACKWARD, FFTW_MEASURE | FFTW_USE_WISDOM);
+            m_fftw_16k_plan = fftw_create_plan(M16KS, FFTW_BACKWARD, FFTW_MEASURE | FFTW_USE_WISDOM);
+            if(fp!=NULL) fftw_export_wisdom_to_file(fp);
+        }
+    }
+    m_fftw_in  = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*M16KS);
+    m_fftw_out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*M16KS);
+}
+void deinit_dvb_t_fft( void )
+{
+    fftw_free(m_fftw_in);
+    fftw_free(m_fftw_out);
 }

@@ -18,9 +18,11 @@ HEADERS  += mainwindow.h \
     Sources/dvb_buffer.h \
     Sources/mp_desc.h \
     Sources/mp_config.h \
-    DVB-T/dvb_t_sym.h
+    DVB-T/dvb_t_sym.h \
+    capturedialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+            Capturedialog.ui
 
 unix{
     CONFIG += link_pkgconfig
@@ -103,7 +105,8 @@ SOURCES += main.cpp \
     Sources/mp_null.cpp \
     Sources/si570.cpp \
     DVB-T/dvb_t_lpf.cpp \
-    Sources/dvb_buffer.cpp
+    Sources/dvb_buffer.cpp \
+    capturedialog.cpp
 HEADERS += mainwindow.h \
     Sources/dvb_gui_if.h \
     Sources/dvb_config.h \
@@ -125,5 +128,4 @@ HEADERS += mainwindow.h \
     Sources/tx_hardware.h \
     DVB-T/dvb_t.h \
     Sources/options.h
-FORMS += mainwindow.ui
 OTHER_FILES  +=  dvb_t_sym.h

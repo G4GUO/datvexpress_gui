@@ -24,6 +24,13 @@ typedef struct{
     char item[MAX_CAPTURE_LIST_ITEMS][80];
 }CaptureList;
 
+// Capture device configuration
+typedef enum{CAP_AUTO, CAP_720X576X25, CAP_720X480X30 }CapVideoFormat;
+
+typedef struct{
+    CapVideoFormat video_format;
+}CaptureFormat;
+
 #define N_SR_MEMS 12
 
 enum{ MODE_DVBS=0, MODE_DVBS2=1, MODE_DVBC = 2, MODE_DVBT=3, MODE_DVBT2=4, MODE_UDP=5 };
@@ -36,10 +43,12 @@ enum{ SAMPLEMODE_8_BITS = 0, SAMPLEMODE_16_BITS = 1 };
 enum{ DVB_C_16QAM_MODE = 0, DVB_C_32QAM_MODE, DVB_C_64QAM_MODE, DVB_C_128QAM_MODE, DVB_C_256QAM_MODE};
 
 typedef struct {
+    char version[80];
     int dvb_mode;
     DVBSFormat      dvbs_fmt;
     DVBTFormat      dvbt_fmt;
     DVB2FrameFormat dvbs2_fmt;
+    CaptureFormat   cap_format;
     int    sr_mem_nr;
     int    sr_mem[N_SR_MEMS];
     double tx_frequency;

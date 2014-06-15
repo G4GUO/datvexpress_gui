@@ -123,11 +123,13 @@ void dvb_t_modulate_init( void );
 
 // dvb_t_linux_fft.c
 void init_dvb_t_fft( void );
+void deinit_dvb_t_fft( void );
 void fft_2k_test( fftw_complex *out );
 void dvbt_fft_modulate( fftw_complex *in, int guard );
 
 // dvb_t.cpp
 void   dvb_t_init( void );
+void   dvb_t_deinit( void );
 void   dvb_t_re_init( void );
 long double dvb_t_get_sample_rate( void );
 double dvb_t_get_symbol_rate( void );

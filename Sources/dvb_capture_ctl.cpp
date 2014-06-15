@@ -419,18 +419,27 @@ void dvb_cap_ctl( int fd )
         {
             loggerf("CAP Error VIDIOC_S_INPUT %d",input);
         }
-/*
+
         // v4l2-ctl --set-fmt-video=width=720,height=576
         // Use the defaults for your region determined by Linux
-        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width  = 720;
-        fmt.fmt.pix.height = 576;//480;//576;
+        fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-        fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        fmt.fmt.pix.width       = 720;
 
-        if( ioctl( fd, VIDIOC_S_FMT, &fmt ) < 0 )
-            logger("Video format error\n");
-*/
+        if(info.cap_format.video_format == CAP_720X576X25 )
+        {
+            fmt.fmt.pix.height = 576;
+            if( ioctl( fd, VIDIOC_S_FMT, &fmt ) < 0 )
+                loggerf("Video format error %d",fmt.fmt.pix.height);
+        }
+        if(info.cap_format.video_format == CAP_720X480X30 )
+        {
+            fmt.fmt.pix.height = 480;
+            if( ioctl( fd, VIDIOC_S_FMT, &fmt ) < 0 )
+                loggerf("Video format error %d",fmt.fmt.pix.height);
+        }
+
         info.video_bitrate = video_bitrate;
         dvb_config_save_and_update( &info );
     }

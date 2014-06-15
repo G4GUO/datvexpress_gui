@@ -91,7 +91,7 @@ void cap_purge(void)
 //
 void cap_rd_bytes( uchar *b, int len )
 {
-    int bytes;
+    int bytes  = 0;
     int offset = 0;
     int req    = len;
 
@@ -99,15 +99,12 @@ void cap_rd_bytes( uchar *b, int len )
     int flag = 1;
 
     // Need to know the source of the video/audio
-    sys_config info;
-    dvb_config_get( &info );
 
     while( flag )
     {
-        if(info.capture_device_type == DVB_UDP_TS)
+        if(m_sysc.capture_device_type == DVB_UDP_TS)
         {
             bytes=udp_read( &b[offset], req  );
-            dvb_cap_check_for_update();
         }
         else
         {
@@ -116,17 +113,15 @@ void cap_rd_bytes( uchar *b, int len )
                 dvb_get_cap_sem();
 //               bytes = buffered_read( &b[offset], req );
                 bytes=capture_read( &b[offset], req );
-                dvb_release_cap_sem();
-
-                if( bytes > 0 )
-                {
-                    offset += bytes;
-                    if( offset == len )
-                        flag = 0;
-                    else
-                        req = len - offset;
-                }
             }
+        }
+        if( bytes > 0 )
+        {
+            offset += bytes;
+            if( offset == len )
+                flag = 0;
+            else
+                req = len - offset;
         }
     }
 }
@@ -509,10 +504,8 @@ int cap_parse_dv_dif_instream( void )
 int cap_parse_instream( void )
 {
     // Need to know the stream type
-    sys_config info;
-    dvb_config_get( &info );
-    if( info.capture_stream_type == DVB_PROGRAM   ) cap_parse_program_instream();
-    if( info.capture_stream_type == DVB_TRANSPORT ) cap_parse_transport_instream();
+    if( m_sysc.capture_stream_type == DVB_PROGRAM   ) cap_parse_program_instream();
+    if( m_sysc.capture_stream_type == DVB_TRANSPORT ) cap_parse_transport_instream();
 //    if( info.capture_stream_type == DVB_DV )        cap_parse_dv_dif_instream();
     return 0;
 }
