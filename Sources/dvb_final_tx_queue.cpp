@@ -77,10 +77,6 @@ void write_final_tx_queue( scmplx* samples, int length )
 {
     int i;
 
-    // New work available
-    sem_post( &work_sem );
-
-    // Get exclusive access
     // Get exclusive access
     pthread_mutex_lock( &mutex );
 
@@ -91,6 +87,8 @@ void write_final_tx_queue( scmplx* samples, int length )
             dvb_buffer *b = dvb_buffer_alloc( TX_BUFFER_LENGTH, BUF_SCMPLX );
             dvb_buffer_write( b, &samples[i] );
             m_tx_q.push( b );
+            // New work available
+            sem_post( &work_sem );
         }
         length = length - i;
         if(length > 0 )
@@ -98,8 +96,9 @@ void write_final_tx_queue( scmplx* samples, int length )
             dvb_buffer *b = dvb_buffer_alloc( length, BUF_SCMPLX );
             dvb_buffer_write( b, &samples[i] );
             m_tx_q.push( b );
+            // New work available
+            sem_post( &work_sem );
         }
-
     }
     pthread_mutex_unlock( &mutex );
 }
