@@ -3,6 +3,7 @@
 #include <list>
 #include <queue>
 #include <semaphore.h>
+#include <pthread.h>
 #include <memory.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,7 +23,8 @@ using namespace std;
 unsigned int m_final_txq_len;
 extern const sys_config m_sysc;
 
-static sem_t f_txq_sem;
+static sem_t work_sem;
+static pthread_mutex_t mutex;
 static queue <dvb_buffer *> m_tx_q;
 
 //
@@ -61,9 +63,11 @@ int final_tx_queue_percentage_unprotected( void )
 int final_tx_queue_size( void )
 {
     // return as a percentage
-    sem_wait( &f_txq_sem );
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
     int ival = m_tx_q.size();
-    sem_post( &f_txq_sem );
+    // Get exclusive access
+    pthread_mutex_unlock( &mutex );
     return (ival);
 }
 //
@@ -71,8 +75,14 @@ int final_tx_queue_size( void )
 //
 void write_final_tx_queue( scmplx* samples, int length )
 {
-    sem_wait( &f_txq_sem );
     int i;
+
+    // New work available
+    sem_post( &work_sem );
+
+    // Get exclusive access
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
 
     if( m_tx_q.size() < m_final_txq_len)
     {
@@ -91,11 +101,15 @@ void write_final_tx_queue( scmplx* samples, int length )
         }
 
     }
-    sem_post( &f_txq_sem );
+    pthread_mutex_unlock( &mutex );
 }
 void write_final_tx_queue_ts( uchar* tp )
 {
-    sem_wait( &f_txq_sem );
+    // New work available
+    sem_post( &work_sem );
+
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
 
     if( m_tx_q.size() < m_final_txq_len)
     {
@@ -103,12 +117,15 @@ void write_final_tx_queue_ts( uchar* tp )
         dvb_buffer_write( b, tp );
         m_tx_q.push( b );
     }
-
-    sem_post( &f_txq_sem );
+    pthread_mutex_unlock( &mutex );
 }
 void write_final_tx_queue_udp( uchar* tp )
 {
-    sem_wait( &f_txq_sem );
+    // New work available
+    sem_post( &work_sem );
+
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
 
     if( m_tx_q.size() < m_final_txq_len)
     {
@@ -116,8 +133,7 @@ void write_final_tx_queue_udp( uchar* tp )
         dvb_buffer_write( b, tp );
         m_tx_q.push( b );
     }
-
-    sem_post( &f_txq_sem );
+    pthread_mutex_unlock( &mutex );
 }
 //
 // Read from the final TX queue
@@ -126,7 +142,11 @@ dvb_buffer *read_final_tx_queue(void)
 {
     dvb_buffer *b;
 
-    sem_wait( &f_txq_sem );
+    // Wait until there is new work
+    sem_wait( &work_sem );
+
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
 
     if( m_tx_q.size() > 0 )
     {
@@ -138,7 +158,7 @@ dvb_buffer *read_final_tx_queue(void)
         b      = NULL;
         dvb_block_rx_check();
     }
-    sem_post( &f_txq_sem );
+    pthread_mutex_unlock( &mutex );
     return b;
 }
 void create_final_tx_queue( void )
@@ -173,6 +193,9 @@ void create_final_tx_queue( void )
     }
 //    printf("Queue length %d\n",m_final_txq_len);
 
-    sem_init( &f_txq_sem, 0, 0 );
-    sem_post( &f_txq_sem );
+    // Create the work semaphore
+    sem_init( &work_sem, 0, 0 );
+
+    // Create the mutex
+    pthread_mutex_init( &mutex, NULL );
 }

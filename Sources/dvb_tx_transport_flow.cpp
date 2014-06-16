@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <pthread.h>
 #include <queue>
 #include <deque>
 #include <list>
@@ -19,7 +20,7 @@
 using namespace std;
 extern int m_final_txq_len;
 
-static sem_t tp_sem;
+static pthread_mutex_t mutex;
 
 extern bool m_pat_flag;
 extern bool m_tdt_flag;
@@ -152,7 +153,8 @@ int ts_multi_pad( void )
 //
 void tx_write_transport_queue( uchar *tp )
 {
-    sem_wait( &tp_sem );
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
     // Update the PCR clock
     pcr_transport_packet_clock_update();
     // Log it to file if required
@@ -160,20 +162,21 @@ void tx_write_transport_queue( uchar *tp )
     // Encode and queue it for transmission
     dvb_tx_encode_and_transmit_tp( tp );
     // Done
-    sem_post( &tp_sem );
+    pthread_mutex_unlock( &mutex );
 }
 //
 // Don't update the PCR clock
 //
 void tx_write_transport_queue_silent( uchar *tp )
 {
-    sem_wait( &tp_sem );
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
     // Log it to file if required
     tp_file_logger_log( tp, 188 );
     // Encode and queue it for transmission
     dvb_tx_encode_and_transmit_tp( tp );
     // Done
-    sem_post( &tp_sem );
+    pthread_mutex_unlock( &mutex );
 }
 //
 // Elementary streams call this to prevent re-entrancy
@@ -189,7 +192,8 @@ void tx_write_transport_queue_elementary( uchar *tp )
 //
 void tx_init_transport_flow( void )
 {
-    sem_init( &tp_sem, 0, 0 );
-    sem_post( &tp_sem );
+    // Create the mutex
+    pthread_mutex_init( &mutex, NULL );
+
     m_null_items = 0;
 }

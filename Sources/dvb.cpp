@@ -38,8 +38,6 @@ static int m_dvb_running;
 static int m_dvb_capture_running;
 
 static pthread_t dvb_thread[5];
-static sem_t dvb_sem;
-static sem_t dvb_rx_block_sem;
 
 static bool m_input_device_ok;
 static bool m_output_device_ok;
@@ -62,14 +60,6 @@ int dvb_is_system_running( void )
     return m_dvb_running;
 }
 
-void dvb_get_sem(void )
-{
-    sem_wait( &dvb_sem );
-}
-void dvb_release_sem(void )
-{
-    sem_post( &dvb_sem );
-}
 //
 // This task parses the capture stream
 //
@@ -223,9 +213,6 @@ int dvb_initialise_system(void)
 //
 int dvb_start( void )
 {
-    sem_init( &dvb_sem, 0, 0 );
-    sem_init( &dvb_rx_block_sem, 0, 0 );
-
     m_dvb_running = 0;// Not running yet
     m_dvb_capture_running = 0;
     m_input_device_ok  = false;
@@ -284,14 +271,12 @@ int dvb_start( void )
     if((m_input_device_ok == true)&&( m_output_device_ok == true))
     {
         dvb_initialise_system();
-        dvb_release_sem();
         return 0;
     }
     else
     {
         dvb_close_capture_device();
         loggerf("Running in demo mode");
-        dvb_release_sem();
         m_dvb_running = 0;
     }
     return(-1);
