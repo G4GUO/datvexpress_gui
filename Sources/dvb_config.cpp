@@ -85,7 +85,6 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->dvbt_fmt.co      = CO_QPSK;
     cfg->dvbt_fmt.sf      = SF_NH;
     cfg->dvbt_fmt.fec     = CR_12;
-    cfg->dvbt_fmt.fec     = CR_12;
     cfg->dvbt_fmt.gi      = GI_14;
     cfg->dvbt_fmt.tm      = TM_2K;
     cfg->dvbt_fmt.chan    = CH_7;
@@ -95,7 +94,12 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->audio_pid        = P1_AUD_PID;
     cfg->pcr_pid          = P1_VID_PID;
     cfg->pmt_pid          = P1_MAP_PID;
+    cfg->nit_pid          = NIT_PID;
     cfg->ebu_data_pid     = P1_DATA_PID;
+    cfg->network_id       = DEFAULT_NETWORK_ID;
+    cfg->stream_id        = DEFAULT_STREAM_ID;
+    cfg->service_id       = DEFAULT_SERVICE_ID;
+    cfg->program_nr       = DEFAULT_PROGRAM_NR;
     strcpy(cfg->ebu_teletext_file_name,"teletext.pes");
     strcpy(cfg->capture_device_name," ");
     strcpy(cfg->server_ip_address,"192.168.1.64 ");

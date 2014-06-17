@@ -88,7 +88,7 @@ void pmt_fmt( int video_stream_type, int audio_stream_type )
     pmt_pkt[len++]               = 0; // Table starts immediately
 
     pmt.section_syntax_indicator = 1;
-    pmt.program_number           = info.pmt_pid;
+    pmt.program_number           = info.program_nr;
     pmt.version_number           = 2;
     pmt.current_next_indicator   = 1;
     pmt.section_number           = 0;

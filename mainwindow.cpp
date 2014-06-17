@@ -385,6 +385,15 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     ui->lineEditVideoPID->setText(st);
     st.setNum(cfg.pcr_pid);
     ui->lineEditPCRPID->setText(st);
+    st.setNum(cfg.nit_pid);
+    ui->lineEditNitPID->setText(st);
+
+    st.setNum(cfg.network_id);
+    ui->lineEditNetworkID->setText(st);
+    st.setNum(cfg.stream_id);
+    ui->lineEditStreamID->setText(st);
+    st.setNum(cfg.program_nr);
+    ui->lineEditProgramNr->setText(st);
 
     // Program info
     ui->lineEditServiceProvider->setText(cfg.service_provider_name);
@@ -704,13 +713,22 @@ void MainWindow::on_pushButtonApplyTPInfo_clicked()
 {
     QString st;
     st = ui->lineEditPmtPID->text();
-    dvb_set_PmtPid( st.toInt() );
+    dvb_set_PmtPid( st.toUInt() );
     st = ui->lineEditVideoPID->text();
-    dvb_set_VideoPid( st.toInt() );
+    dvb_set_VideoPid( st.toUInt() );
     st = ui->lineEditAudioPID->text();
-    dvb_set_AudioPid( st.toInt() );
+    dvb_set_AudioPid( st.toUInt() );
     st = ui->lineEditPCRPID->text();
-    dvb_set_PcrPid( st.toInt() );
+    dvb_set_PcrPid( st.toUInt() );
+    st = ui->lineEditNitPID->text();
+    dvb_set_NitPid( st.toInt() );
+
+    st = ui->lineEditNetworkID->text();
+    dvb_set_NetworkId( st.toUInt() );
+    st = ui->lineEditStreamID->text();
+    dvb_set_StreamId( st.toUInt() );
+    st = ui->lineEditProgramNr->text();
+    dvb_set_ProgramNr( st.toUInt() );
 }
 
 void MainWindow::on_pushButtonApplyEPG_clicked()

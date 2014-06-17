@@ -83,15 +83,15 @@ void sdt_fmt( void )
     sdt_pkt[len++] = 0;
 
     // Add the payload
-    sds.transport_stream_id    = info.pmt_pid;
+    sds.transport_stream_id    = info.stream_id;
     sds.version_number         = 2;
     sds.current_next_indicator = 1;
-    sds.original_network_id    = info.pmt_pid;
+    sds.original_network_id    = info.network_id;
     sds.section_number         = 0;
     sds.last_section_number    = 0;
 
     // First section
-    sds.section[0].service_id              = info.pmt_pid;
+    sds.section[0].service_id              = info.service_id;
     sds.section[0].eit_schedule_flag       = 1;
     sds.section[0].eit_present_follow_flag = 1;
     sds.section[0].running_status          = 4;

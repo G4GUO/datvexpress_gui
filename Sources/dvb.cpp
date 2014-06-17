@@ -201,9 +201,12 @@ int dvb_initialise_system(void)
     res = pthread_create( &dvb_thread[3], NULL, timer_proc, NULL );
     if( res!= 0 ) loggerf("DVB Thread Timer creation failed");
 
-    // Create the SI thread, required for all varients
-    res = pthread_create( &dvb_thread[4], NULL, si_proc, NULL );
-    if( res!= 0 ) loggerf("DVB Thread SI creation failed");
+    if( cfg.capture_device_type != DVB_UDP_TS )
+    {
+        // Create the SI thread, required for all varients except UDP capture
+        res = pthread_create( &dvb_thread[4], NULL, si_proc, NULL );
+        if( res!= 0 ) loggerf("DVB Thread SI creation failed");
+    }
 
     return(0);
 }

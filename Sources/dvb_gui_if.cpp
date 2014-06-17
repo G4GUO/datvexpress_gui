@@ -19,6 +19,8 @@
 #include "mp_tp.h"
 #include "tx_hardware.h"
 
+#define PID_MASK(a) (a&0xFFF)
+
 void dvb_get_config( sys_config *cfg )
 {
     dvb_config_get( cfg );
@@ -69,12 +71,14 @@ void dvb_set_tx_lvl( float lvl )
     dvb_config_save_and_update( &info );
     hw_level( lvl );
 }
+
 void dvb_set_service_provider_name( const char *txt )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
     strcpy( info.service_provider_name, txt );
     dvb_config_save( &info );
+    dvb_si_refresh();
 }
 
 void dvb_set_service_name( const char *txt )
@@ -83,6 +87,7 @@ void dvb_set_service_name( const char *txt )
     dvb_config_retrieve_from_disk(&info);
     strcpy( info.service_name, txt );
     dvb_config_save( &info );
+    dvb_si_refresh();
 }
 //
 // Type of capture device, only devices that are V4L compliant will be shown.
@@ -132,47 +137,90 @@ int dvb_set_dvb_mode( int mode )
     return 0;
 }
 //
-// Re-configure the capture and Symbol rate
+// IDs
 //
-void dvb_set_PmtPid( int pid )
+void dvb_set_PmtPid( u_int16_t pid )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.pmt_pid = pid;
+    info.pmt_pid = PID_MASK(pid);
     dvb_config_save( &info );
-    dvb_si_init();
+    dvb_si_refresh();
 }
-void dvb_set_VideoPid( int pid )
+void dvb_set_VideoPid( u_int16_t pid )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.video_pid = pid;
+    info.video_pid = PID_MASK(pid);
     dvb_config_save( &info );
-    dvb_si_init();
+    dvb_si_refresh();
 }
-void dvb_set_AudioPid( int pid )
+void dvb_set_AudioPid( u_int16_t pid )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.audio_pid = pid;
+    info.audio_pid = PID_MASK(pid);
     dvb_config_save( &info );
-    dvb_si_init();
+    dvb_si_refresh();
 }
-void dvb_set_PcrPid( int pid )
+void dvb_set_PcrPid( u_int16_t pid )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.pcr_pid = pid;
+    info.pcr_pid = PID_MASK(pid);
     dvb_config_save( &info );
-    dvb_si_init();
+    dvb_si_refresh();
 }
-void dvb_set_DataPid( int pid )
+void dvb_set_DataPid( u_int16_t pid )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.ebu_data_pid = pid;
+    info.ebu_data_pid = PID_MASK(pid);
     dvb_config_save( &info );
-    dvb_si_init();
+    dvb_si_refresh();
+}
+void dvb_set_NitPid( u_int16_t pid )
+{
+    sys_config info;
+    dvb_config_retrieve_from_disk(&info);
+    info.nit_pid = PID_MASK(pid);
+    dvb_config_save( &info );
+    dvb_si_refresh();
+}
+
+void dvb_set_NetworkId( u_int16_t id )
+{
+    sys_config info;
+    dvb_config_retrieve_from_disk(&info);
+    info.network_id = PID_MASK(id);
+    dvb_config_save( &info );
+    dvb_si_refresh();
+}
+void dvb_set_StreamId( u_int16_t id )
+{
+    sys_config info;
+    dvb_config_retrieve_from_disk(&info);
+    info.stream_id = PID_MASK(id);
+    dvb_config_save( &info );
+    dvb_si_refresh();
+}
+void dvb_set_ServiceId( u_int16_t id )
+{
+    sys_config info;
+    dvb_config_retrieve_from_disk(&info);
+    info.service_id = PID_MASK(id);
+    info.program_nr = PID_MASK(id);
+    dvb_config_save( &info );
+    dvb_si_refresh();
+}
+void dvb_set_ProgramNr( u_int16_t id )
+{
+    sys_config info;
+    dvb_config_retrieve_from_disk(&info);
+    info.program_nr = PID_MASK(id);
+    info.service_id = PID_MASK(id);
+    dvb_config_save( &info );
+    dvb_si_refresh();
 }
 
 void dvb_set_epg_event_duration( int duration )

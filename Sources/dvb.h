@@ -5,7 +5,6 @@
 #include "express.h"
 #include "dvb_gen.h"
 #include "dvb_config.h"
-#include "options.h"
 #include "dvb_buffer.h"
 
 #define TAPS 12

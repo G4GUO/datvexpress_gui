@@ -21,12 +21,10 @@ typedef struct{
     int   l;
 }VideoBuffer;
 
-void dvb_cap_ctl( int fd );
+void dvb_cap_ctl( void );
 int dvb_open_capture_device(void);
 void dvb_close_capture_device(void);
 void dvb_cap_input( int input );
-void dvb_get_cap_sem(void);
-void dvb_release_cap_sem(void);
 void dvb_cap_check_for_update(void);
 void dvb_cap_request_param_update( void );
 void cap_video_present(void);

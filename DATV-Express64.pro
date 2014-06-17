@@ -126,6 +126,5 @@ HEADERS += mainwindow.h \
     Sources/dvb_s2_if.h \
     Sources/express.h \
     Sources/tx_hardware.h \
-    DVB-T/dvb_t.h \
-    Sources/options.h
+    DVB-T/dvb_t.h
 OTHER_FILES  +=  dvb_t_sym.h

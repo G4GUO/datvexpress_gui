@@ -29,6 +29,7 @@ typedef struct{
 #define CRC_32_LEN 4
 
 void dvb_si_init( void );
+void dvb_si_refresh( void );
 int crc32_add( uchar *b, int len );
 unsigned long dvb_crc32_calc( uchar *b, int len );
 void rd_pes( uchar *b, int c );

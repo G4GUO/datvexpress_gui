@@ -75,7 +75,7 @@ int f_nit( uchar *b, network_information_section *p )
     return len;
 }
 //
-// Format the header and payload of the SDT packet
+// Format the header and payload of the NIT packet
 //
 void nit_fmt( void )
 {
@@ -88,7 +88,7 @@ void nit_fmt( void )
     hdr.transport_error_indicator    = TRANSPORT_ERROR_FALSE;
     hdr.payload_unit_start_indicator = PAYLOAD_START_TRUE;
     hdr.transport_priority           = TRANSPORT_PRIORITY_LOW;
-    hdr.pid                          = NIT_PID;//
+    hdr.pid                          = info.nit_pid;
     hdr.transport_scrambling_control = SCRAMBLING_OFF;
     hdr.adaption_field_control       = ADAPTION_PAYLOAD_ONLY;
     hdr.continuity_counter           = 0;
@@ -99,7 +99,7 @@ void nit_fmt( void )
 
     // Add the payload
     nis.section_syntax_indicator  = 1;
-    nis.network_id                = info.pmt_pid;
+    nis.network_id                = info.network_id;
     nis.version_number            = 2;
     nis.current_next_indicator    = 1;
     nis.section_number            = 0;
@@ -115,14 +115,14 @@ void nit_fmt( void )
     nis.nr_transport_streams      = 1;
 
     // First transport stream
-    nis.ts_info[0].transport_stream_id = 1;
-    nis.ts_info[0].original_network_id = 1;
+    nis.ts_info[0].transport_stream_id = info.stream_id;
+    nis.ts_info[0].original_network_id = info.network_id;
     nis.ts_info[0].nr_descriptors      = 1;
 
     // Transport stream descriptors
     nis.ts_info[0].desc[0].sld.tag                   = SI_DESC_SVC_LST;
     nis.ts_info[0].desc[0].sld.table_length          = 1;
-    nis.ts_info[0].desc[0].sld.entry[0].service_id   = PGM_ID;
+    nis.ts_info[0].desc[0].sld.entry[0].service_id   = info.service_id;
     nis.ts_info[0].desc[0].sld.entry[0].service_type = SVC_DIGITAL_TV;
     len += f_nit( &nit_pkt[len], &nis );
 

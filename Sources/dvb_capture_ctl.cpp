@@ -16,6 +16,7 @@
 #include <sys/ioctl.h>
 #include <asm/types.h>
 #include <semaphore.h>
+#include <pthread.h>
 #include <iostream>
 #include <linux/videodev2.h>
 #ifdef _USE_SW_CODECS
@@ -35,8 +36,6 @@ int m_i_fd;
 #ifdef _USE_SW_CODECS
 snd_pcm_t *m_audio_handle;
 #endif
-
-sem_t capture_sem;
 
 // Local variables
 static bool   m_cap_update;
@@ -273,16 +272,13 @@ int open_named_capture_device( const char *name )
 // Program or re-program the capture device
 // This is semaphore protected.
 //
-void dvb_cap_ctl( int fd )
+void dvb_cap_ctl( void )
 {
     struct v4l2_format fmt;
     struct v4l2_control ctl;
     int input;
     int video_bitrate;
     sys_config info;
-
-    dvb_get_cap_sem();
-    lseek( fd, 0, SEEK_END);
 
     memset(&fmt,0,sizeof(fmt));
     memset(&ctl,0,sizeof(ctl));
@@ -294,7 +290,7 @@ void dvb_cap_ctl( int fd )
     // Get the capabilities
     //
     struct v4l2_capability cap;
-    if( ioctl(	fd,VIDIOC_QUERYCAP, &cap) < 0 )
+    if( ioctl(	m_i_fd,VIDIOC_QUERYCAP, &cap) < 0 )
     {
         logger("CAP Query Error");
     }
@@ -324,7 +320,7 @@ void dvb_cap_ctl( int fd )
         // Set priority
         v4l2_priority priority = V4L2_PRIORITY_RECORD;
 
-        if( ioctl( fd, VIDIOC_S_PRIORITY, &priority ) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_PRIORITY, &priority ) < 0 )
         {
             logger("CAP Error V4L2_PRIORITY_RECORD");
         }
@@ -335,7 +331,7 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c stream_type=0 #MPEG-2 DVD = 3, MPEG-2 Program Stream=0
         ctl.id    = V4L2_CID_MPEG_STREAM_TYPE;
         ctl.value = V4L2_MPEG_STREAM_TYPE_MPEG2_PS;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_STREAM_TYPE");
         }
@@ -343,7 +339,7 @@ void dvb_cap_ctl( int fd )
         // Sample frequency 48K
         ctl.id    = V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ;
         ctl.value = V4L2_MPEG_AUDIO_SAMPLING_FREQ_48000;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ");
         }
@@ -351,7 +347,7 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c audio_stereo_mode=0 		#Stereo
         ctl.id    = V4L2_CID_MPEG_AUDIO_MODE;
         ctl.value = V4L2_MPEG_AUDIO_MODE_STEREO;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
                 logger("CAP Error V4L2_CID_MPEG_AUDIO_MODE");
         }
@@ -359,14 +355,14 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c audio_layer_ii_bitrate=9 		#192Kbps
         ctl.id    = V4L2_CID_MPEG_AUDIO_L2_BITRATE;
         ctl.value = V4L2_MPEG_AUDIO_L2_BITRATE_192K;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_AUDIO_L2_BITRATE");
         }
 
         ctl.id       = V4L2_CID_MPEG_AUDIO_ENCODING;
         ctl.value    = V4L2_MPEG_AUDIO_ENCODING_LAYER_2;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_AUDIO_ENCODING");
         }
@@ -374,7 +370,7 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c video_bitrate=3100000		#Set Video Bitrate
         ctl.id    = V4L2_CID_MPEG_VIDEO_BITRATE;
         ctl.value = video_bitrate;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE");
         }
@@ -384,7 +380,7 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c video_bitrate_mode=1		#COnstant Bitrate = 1, Variable Bitrate = 0
         ctl.id    = V4L2_CID_MPEG_VIDEO_BITRATE_MODE;
         ctl.value = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE_MODE");
         }
@@ -392,14 +388,14 @@ void dvb_cap_ctl( int fd )
         // v4l2-ctl -c video_aspect=1			#4:3
         ctl.id    = V4L2_CID_MPEG_VIDEO_ASPECT;
         ctl.value = V4L2_MPEG_VIDEO_ASPECT_4x3;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_VIDEO_ASPECT");
         }
 
         ctl.id    = V4L2_CID_MPEG_VIDEO_GOP_SIZE;
         ctl.value = 10;
-        if( ioctl( fd, VIDIOC_S_CTRL, &ctl) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_VIDEO_GOP_SIZE");
         }
@@ -415,7 +411,7 @@ void dvb_cap_ctl( int fd )
 //	input = V4L2_INPUT_TYPE_CAMERA;
         input = info.capture_device_input;
 
-        if( ioctl( fd, VIDIOC_S_INPUT, &input) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
         {
             loggerf("CAP Error VIDIOC_S_INPUT %d",input);
         }
@@ -430,13 +426,13 @@ void dvb_cap_ctl( int fd )
         if(info.cap_format.video_format == CAP_720X576X25 )
         {
             fmt.fmt.pix.height = 576;
-            if( ioctl( fd, VIDIOC_S_FMT, &fmt ) < 0 )
+            if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
         }
         if(info.cap_format.video_format == CAP_720X480X30 )
         {
             fmt.fmt.pix.height = 480;
-            if( ioctl( fd, VIDIOC_S_FMT, &fmt ) < 0 )
+            if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
         }
 
@@ -482,7 +478,7 @@ void dvb_cap_ctl( int fd )
 //        ct[5].id       = V4L2_CID_MPEG_STREAM_PID_PCR;
 //        ct[5].value    = info.pcr_pid;
 
-        if( ioctl( fd, VIDIOC_S_EXT_CTRLS, &ec )<0)
+        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec )<0)
         {
             logger("CAP Error Extended V4L2_CID_MPEG_VIDEO_CONFIGURATION");
         }
@@ -496,7 +492,7 @@ void dvb_cap_ctl( int fd )
         ct[0].id    = V4L2_CID_MPEG_VIDEO_BITRATE_MODE;
         ct[0].value = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
 
-        if( ioctl( fd, VIDIOC_S_EXT_CTRLS, &ec) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec) < 0 )
         {
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE_MODE");
         }
@@ -506,7 +502,7 @@ void dvb_cap_ctl( int fd )
          // 0 = component, 1 = S-Video, 2 = Composite
 
         input = info.capture_device_input;
-        if( ioctl( fd, VIDIOC_S_INPUT, &input) < 0 )
+        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
         {
             logger("CAP Error VIDIOC_S_INPUT");
         }
@@ -525,6 +521,7 @@ void dvb_cap_ctl( int fd )
 // ANALOGUE CAPTURE
 ///////////////////
 #ifdef _USE_SW_CODECS
+
     if((info.capture_device_type == DVB_V4L)&&(info.capture_stream_type  == DVB_YUV))
     {
         // Analogue Video capture
@@ -574,7 +571,7 @@ void dvb_cap_ctl( int fd )
 
     }
 #endif
-    dvb_release_cap_sem();
+
     m_cap_update = false;
 }
 //
@@ -583,9 +580,10 @@ void dvb_cap_ctl( int fd )
 //
 void dvb_cap_check_for_update(void)
 {
+    // Get exclusive access
     if( m_cap_update == true )
     {
-        dvb_cap_ctl( m_i_fd );
+        dvb_cap_ctl();
     }
 }
 //
@@ -608,10 +606,6 @@ int dvb_open_capture_device(void)
         loggerf("Video Capture device open failed");
         return -1;
     }
-    else
-    {
-//        loggerf("Using Video capture device %s\n",info.capture_device_name);
-    }
     return m_i_fd;
 }
 //
@@ -626,8 +620,6 @@ void dvb_close_capture_device(void)
     if(info.capture_device_type == DVB_UDP_TS)
         return;
 
-    dvb_get_cap_sem();
-
     if( m_i_fd > 0 )
     {
        close( m_i_fd );
@@ -637,21 +629,18 @@ void dvb_close_capture_device(void)
         snd_pcm_close(m_audio_handle);
 #endif
     m_i_fd = 0;
-    dvb_release_cap_sem();
 }
 //
 // Initialisation of the capture device
 //
 int dvb_cap_init( void )
 {
-    sem_init( &capture_sem, 0, 0 );
-    sem_post( &capture_sem );
     pes_process();// reset the modules
     pes_reset();
     if( dvb_open_capture_device() > 0 )
     {
         m_cap_status = 0;
-        dvb_cap_ctl(m_i_fd);
+        dvb_cap_ctl();
         cap_purge();
     }
     else

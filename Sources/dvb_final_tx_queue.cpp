@@ -71,7 +71,7 @@ int final_tx_queue_size( void )
     return (ival);
 }
 //
-// Write samples to the final TX queue
+// Queue samples to the final TX queue
 //
 void write_final_tx_queue( scmplx* samples, int length )
 {
@@ -102,11 +102,11 @@ void write_final_tx_queue( scmplx* samples, int length )
     }
     pthread_mutex_unlock( &mutex );
 }
+//
+// Queue Tranport Packets
+//
 void write_final_tx_queue_ts( uchar* tp )
 {
-    // New work available
-    sem_post( &work_sem );
-
     // Get exclusive access
     pthread_mutex_lock( &mutex );
 
@@ -115,14 +115,16 @@ void write_final_tx_queue_ts( uchar* tp )
         dvb_buffer *b = dvb_buffer_alloc( 188, BUF_TS );
         dvb_buffer_write( b, tp );
         m_tx_q.push( b );
+        // New work available
+        sem_post( &work_sem );
     }
     pthread_mutex_unlock( &mutex );
 }
+//
+// Queue TS packets for UDP
+//
 void write_final_tx_queue_udp( uchar* tp )
 {
-    // New work available
-    sem_post( &work_sem );
-
     // Get exclusive access
     pthread_mutex_lock( &mutex );
 
@@ -131,11 +133,13 @@ void write_final_tx_queue_udp( uchar* tp )
         dvb_buffer *b = dvb_buffer_alloc( 188, BUF_UDP );
         dvb_buffer_write( b, tp );
         m_tx_q.push( b );
+        // New work available
+        sem_post( &work_sem );
     }
     pthread_mutex_unlock( &mutex );
 }
 //
-// Read from the final TX queue
+// Read from the final TX queue. this process will block if no data available
 //
 dvb_buffer *read_final_tx_queue(void)
 {

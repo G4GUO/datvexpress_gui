@@ -5,15 +5,26 @@
 #include "dvb_gen.h"
 #include "mp_tp.h"
 #include "mp_config.h"
+#include "dvb_config.h"
 
 void dvb_si_init( void )
 {
-	null_fmt();
+    null_fmt();
 	pat_fmt();
 	pmt_fmt();
 	sdt_fmt();
 	eit_fmt();
 	nit_fmt();
+}
+void dvb_si_refresh( void )
+{
+    dvb_config_retrieve_from_disk();
+
+    pat_fmt();
+    pmt_fmt();
+    sdt_fmt();
+    eit_fmt();
+    nit_fmt();
 }
 void dvb_refresh_epg( void )
 {

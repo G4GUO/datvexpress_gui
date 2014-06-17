@@ -20,12 +20,11 @@
 #include "an_capture.h"
 
 extern const sys_config m_sysc;
+extern int              m_i_fd;
 
-extern int m_i_fd;
 #ifdef _USE_SW_CODECS
 extern snd_pcm_t *m_audio_handle;
 #endif
-extern sem_t capture_sem;
 static int m_video_seq;
 static int m_audio_seq;
 
@@ -110,7 +109,6 @@ void cap_rd_bytes( uchar *b, int len )
         {
             if( m_i_fd > 0 )
             {
-                dvb_get_cap_sem();
 //               bytes = buffered_read( &b[offset], req );
                 bytes=capture_read( &b[offset], req );
             }
@@ -347,7 +345,6 @@ void cap_pcr_to_ts( void )
     }
 }
 
-int last_stream;
 //
 // Parse the program stream coming from the capture card
 //
@@ -659,16 +656,4 @@ bool cap_check_audio_present(void)
         return false;
     else
         return true;
-}
-
-//
-// Semaphore handlers
-//
-void dvb_get_cap_sem(void)
-{
-    //sem_wait( &capture_sem );
-}
-void dvb_release_cap_sem(void)
-{
-    //sem_post( &capture_sem );
 }

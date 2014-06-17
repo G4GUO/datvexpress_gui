@@ -65,7 +65,7 @@ void pat_fmt( void )
 
     // Add the pat table
     pat.section_syntax_indicator = 1;
-    pat.transport_stream_id      = TP_STREAM_ID;
+    pat.transport_stream_id      = info.stream_id;
     pat.version_number           = 2;
     pat.current_next_indicator   = 1;
     pat.section_number           = 0;
@@ -73,9 +73,9 @@ void pat_fmt( void )
     pat.nr_table_entries         = 2;
     // Entries
     pat.entry[0].program_number  = 0;
-    pat.entry[0].pid             = NIT_PID;//default value
+    pat.entry[0].pid             = info.nit_pid;//default value
 
-    pat.entry[1].program_number  = info.pmt_pid;// Only one program
+    pat.entry[1].program_number  = info.program_nr;// Only one program
     pat.entry[1].pid             = info.pmt_pid;
 
 

@@ -90,13 +90,13 @@ void eit_fmt( void )
     m_pkts.pid = EIT_PID;
     // Add the payload
     eis.section_syntax_indicator  = 1;
-    eis.service_id                = info.pmt_pid;
+    eis.service_id                = info.service_id;
     eis.version_number            = 2;
     eis.current_next_indicator    = 1;
     eis.section_number            = 0;
     eis.last_section_number       = 0;
-    eis.transport_stream_id       = info.pmt_pid;
-    eis.original_network_id       = info.pmt_pid;
+    eis.transport_stream_id       = info.stream_id;
+    eis.original_network_id       = info.network_id;
     eis.segment_last_section_number = 0;
     eis.last_table_id             = 0x4E;
 
