@@ -85,6 +85,8 @@
 // Delays to get the HAUPAUGE to work
 #define PVR_VIDEO_DELAY 0.01
 #define PVR_PCR_DELAY   0.2
+// Maximum NULL packet seperation
+#define MAX_NULL_SEPERATION 100
 
 // PTT status
 #define DVB_RECEIVING           0
