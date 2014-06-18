@@ -152,6 +152,9 @@ int calculate_video_bitrate( void )
     s_rate -= 192000.0;
     // SI overhead
     s_rate -= 100000;
+    // PCR overhead if using seperate stream
+    if(info.pcr_pid != info.video_pid) s_rate -= 50000;
+
     // Twiddle
     s_rate = s_rate*twiddle;
     return (int)s_rate;

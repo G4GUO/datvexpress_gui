@@ -155,24 +155,6 @@ void tx_write_transport_queue( uchar *tp )
 {
     // Get exclusive access
     pthread_mutex_lock( &mutex );
-    // Update the PCR clock
-    pcr_transport_packet_clock_update();
-    // Log it to file if required
-    tp_file_logger_log( tp, 188 );
-    // Encode and queue it for transmission
-    dvb_tx_encode_and_transmit_tp( tp );
-    // Done
-    pthread_mutex_unlock( &mutex );
-}
-//
-// Don't update the PCR clock
-//
-void tx_write_transport_queue_silent( uchar *tp )
-{
-    // Get exclusive access
-    pthread_mutex_lock( &mutex );
-    // Log it to file if required
-    tp_file_logger_log( tp, 188 );
     // Encode and queue it for transmission
     dvb_tx_encode_and_transmit_tp( tp );
     // Done

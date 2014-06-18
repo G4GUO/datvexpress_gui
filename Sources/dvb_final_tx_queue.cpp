@@ -114,6 +114,7 @@ void write_final_tx_queue_ts( uchar* tp )
     {
         dvb_buffer *b = dvb_buffer_alloc( 188, BUF_TS );
         dvb_buffer_write( b, tp );
+        // Encode and queue it for transmission
         m_tx_q.push( b );
         // New work available
         sem_post( &work_sem );

@@ -42,5 +42,6 @@ void populate_audio_capture_list( CaptureList *list );
 int open_named_capture_device( const char *name );
 int calculate_video_bitrate(void);
 void video_capture_stream_and_device_type( const char *driver );
+void cap_pcr_to_ts( void );
 
 #endif

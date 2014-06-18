@@ -178,6 +178,7 @@ int f_send_pes_pcr_tp( int pid, uchar c )
 {
     int  len,afl;
     tp_hdr hdr;
+    uchar tp_pkt[DVBS_T_CODED_FRAME_LEN];
 
     // Header
     hdr.transport_error_indicator    = 0;
@@ -187,16 +188,16 @@ int f_send_pes_pcr_tp( int pid, uchar c )
     hdr.transport_scrambling_control = 0;
     hdr.continuity_counter           = c;
     hdr.adaption_field_control       = 0x02;//Adaption only
-    len = tp_fmt( m_tp_pkt, &hdr );
+    len = tp_fmt( tp_pkt, &hdr );
     afl = len;
     // Add PCR field
-    len += pcr_fmt( &m_tp_pkt[len]  );
-    m_tp_pkt[afl] = 183;// Special case fof afc = 0x02
+    len += pcr_fmt( &tp_pkt[len]  );
+    tp_pkt[afl] = 183;// Special case fof afc = 0x02
     for( int i = len ; i < TP_LEN; i++ )
     {
-        m_tp_pkt[i] = 0xFF;
+        tp_pkt[i] = 0xFF;
     }
-    tx_write_transport_queue_elementary( m_tp_pkt );
+    dvb_tx_encode_and_transmit_tp_raw( tp_pkt );
     return TP_LEN;
 }
 //

@@ -4,6 +4,7 @@
 #include "DVB-T/dvb_t.h"
 #include "dvb_s2_if.h"
 #include "mp_tp.h"
+#include "dvb_capture_ctl.h"
 
 static uchar m_dibit[2000];
 static int m_tx_hardware;
@@ -33,12 +34,18 @@ void dvb_tx_frame_init(void)
 
     dvb_s2_start();
 }
-void dvb_tx_encode_and_transmit_tp_dvbs( uchar *tp )
+void dvb_tx_transmit_tp_dvbs( uchar *tp )
 {
-    dvb_s_encode_and_modulate( tp, m_dibit );
+    uchar *ntp;
+    write_final_tx_queue_ts( tp );
+    tp_file_logger_log( tp, 188 );
     if(below_null_threshold())
     {
-        dvb_s_encode_and_modulate(get_padding_null_dvb(), m_dibit);
+        ntp = get_padding_null_dvb();
+        // Update the PCR clock
+        pcr_transport_packet_clock_update();
+        tp_file_logger_log( ntp, 188 );
+        write_final_tx_queue_ts(ntp);
         m_null_seperation = 0;
     }
     else
@@ -46,17 +53,60 @@ void dvb_tx_encode_and_transmit_tp_dvbs( uchar *tp )
         m_null_seperation++;
         if( m_null_seperation >= MAX_NULL_SEPERATION)
         {
-            dvb_s_encode_and_modulate(get_padding_null_dvb(), m_dibit);
+            ntp = get_padding_null_dvb();
+            // Update the PCR clock
+            pcr_transport_packet_clock_update();
+            tp_file_logger_log( ntp, 188 );
+            write_final_tx_queue_ts(ntp);
+            m_null_seperation = 0;
+        }
+    }
+}
+
+void dvb_tx_encode_and_transmit_tp_dvbs( uchar *tp )
+{
+    uchar *ntp;
+    dvb_s_encode_and_modulate( tp, m_dibit );
+    tp_file_logger_log( tp, 188 );
+    // Encode and queue it for transmission
+    if(below_null_threshold())
+    {
+        ntp = get_padding_null_dvb();
+        // Update the PCR clock
+        pcr_transport_packet_clock_update();
+        // Log if required
+        tp_file_logger_log( ntp, 188 );
+        // Encode
+        dvb_s_encode_and_modulate( ntp, m_dibit);
+        // Encode and queue it for transmission
+        m_null_seperation = 0;
+    }
+    else
+    {
+        m_null_seperation++;
+        if( m_null_seperation >= MAX_NULL_SEPERATION)
+        {
+            ntp = get_padding_null_dvb();
+            // Update the PCR clock
+            pcr_transport_packet_clock_update();
+            tp_file_logger_log( ntp, 188 );
+            dvb_s_encode_and_modulate(ntp, m_dibit);
             m_null_seperation = 0;
         }
     }
 }
 void dvb_tx_encode_and_transmit_tp_dvbs2( uchar *tp )
 {
+    uchar *ntp;
     dvb_s2_encode_tp( tp );
+    tp_file_logger_log( tp, 188 );
     if(below_null_threshold())
     {
-        dvb_s2_encode_tp(get_padding_null_dvb());
+        ntp = get_padding_null_dvb();
+        // Update the PCR clock
+        pcr_transport_packet_clock_update();
+        tp_file_logger_log( ntp, 188 );
+        dvb_s2_encode_tp(ntp);
         m_null_seperation = 0;
     }
     else
@@ -64,17 +114,27 @@ void dvb_tx_encode_and_transmit_tp_dvbs2( uchar *tp )
         m_null_seperation++;
         if( m_null_seperation >= MAX_NULL_SEPERATION)
         {
-            dvb_s2_encode_tp(get_padding_null_dvb());
+            ntp = get_padding_null_dvb();
+            // Update the PCR clock
+            pcr_transport_packet_clock_update();
+            tp_file_logger_log( ntp, 188 );
+            dvb_s2_encode_tp(ntp);
             m_null_seperation = 0;
         }
     }
 }
 void dvb_tx_encode_and_transmit_tp_dvbt( uchar *tp )
 {
+    uchar *ntp;
     dvb_t_encode_and_modulate( tp, m_dibit );
+    tp_file_logger_log( tp, 188 );
     if(below_null_threshold())
     {
-        dvb_t_encode_and_modulate(get_padding_null_dvb(), m_dibit);
+        ntp = get_padding_null_dvb();
+        // Update the PCR clock
+        pcr_transport_packet_clock_update();
+        tp_file_logger_log( ntp, 188 );
+        dvb_t_encode_and_modulate(ntp, m_dibit);
         m_null_seperation = 0;
     }
     else
@@ -82,7 +142,11 @@ void dvb_tx_encode_and_transmit_tp_dvbt( uchar *tp )
         m_null_seperation++;
         if( m_null_seperation >= MAX_NULL_SEPERATION)
         {
-            dvb_t_encode_and_modulate(get_padding_null_dvb(), m_dibit);
+            ntp = get_padding_null_dvb();
+            // Update the PCR clock
+            pcr_transport_packet_clock_update();
+            tp_file_logger_log( ntp, 188 );
+            dvb_t_encode_and_modulate(ntp, m_dibit);
             m_null_seperation = 0;
         }
     }
@@ -92,37 +156,23 @@ void dvb_tx_encode_and_transmit_tp_dvbt( uchar *tp )
 // Encode and transmit a transport packet
 // This accepts a 188 byte packet and is semaphore protected
 //
-void dvb_tx_encode_and_transmit_tp( uchar *tp )
+void dvb_tx_encode_and_transmit_tp_raw( uchar *tp )
 {
     //
     // Send to monitor port
     //
     //vt_queue_tp( tp );
-
     //
     // Modulate
     //
+
+    // Update the PCR clock
+    pcr_transport_packet_clock_update();
+
     switch( m_tx_hardware )
     {
     case HW_EXPRESS_AUTO:
-        if( m_dvb_mode == MODE_DVBS )
-        {
-            write_final_tx_queue_ts( tp );
-            if(below_null_threshold())
-            {
-                write_final_tx_queue_ts(get_padding_null_dvb());
-                m_null_seperation = 0;
-            }
-            else
-            {
-                m_null_seperation++;
-                if( m_null_seperation >= MAX_NULL_SEPERATION)
-                {
-                    write_final_tx_queue_ts(get_padding_null_dvb());
-                    m_null_seperation = 0;
-                }
-            }
-        }
+        if( m_dvb_mode == MODE_DVBS )  dvb_tx_transmit_tp_dvbs( tp );
         if( m_dvb_mode == MODE_DVBS2 ) dvb_tx_encode_and_transmit_tp_dvbs2( tp );
         if( m_dvb_mode == MODE_DVBT )  dvb_tx_encode_and_transmit_tp_dvbt( tp );
         break;
@@ -147,34 +197,23 @@ void dvb_tx_encode_and_transmit_tp( uchar *tp )
         }
         break;
     case HW_EXPRESS_TS:
-        {
-            if( m_dvb_mode == MODE_DVBS )
-            {
-                write_final_tx_queue_ts( tp );
-                if(below_null_threshold())
-                {
-                    write_final_tx_queue_ts(get_padding_null_dvb());
-                    m_null_seperation = 0;
-                }
-                else
-                {
-                    m_null_seperation++;
-                    if( m_null_seperation >= MAX_NULL_SEPERATION)
-                    {
-                        write_final_tx_queue_ts(get_padding_null_dvb());
-                        m_null_seperation = 0;
-                    }
-                }
-            }
-        }
+        if( m_dvb_mode == MODE_DVBS ) dvb_tx_transmit_tp_dvbs( tp );
         break;
     case HW_EXPRESS_UDP:
-        {
-            if( m_dvb_mode == MODE_DVBS ) write_final_tx_queue_udp( tp );
-        }
+        if( m_dvb_mode == MODE_DVBS ) write_final_tx_queue_udp( tp );
         break;
     default:
         break;
         }
     }
+}
+//
+// Add a PCR packet if needed
+// Transmit the tp it had been given
+//
+void dvb_tx_encode_and_transmit_tp( uchar *tp )
+{
+    // See if a PCR packet on a seperate ts needs to be added
+    cap_pcr_to_ts();
+    dvb_tx_encode_and_transmit_tp_raw( tp );
 }

@@ -335,16 +335,18 @@ void cap_pcr_to_ts( void )
 {
     bool ph            = false;
 
+    // See if PCR is on a seperate PID
     if( m_sysc.video_pid != m_sysc.pcr_pid )
     {
+        // Is it time to update
         ph = is_pcr_update();
         if( ph == true )
         {
+            // Send the PCR packet
             f_send_pes_pcr_tp( m_sysc.pcr_pid, 0 );
         }
     }
 }
-
 //
 // Parse the program stream coming from the capture card
 //
@@ -354,6 +356,10 @@ int cap_get_len( uchar *b )
     len = (len<<8) | b[1];
     return len;
 }
+//
+// This parses a program stream from a Hauppauge device
+// and sends it as a Transport stream.
+//
 int cap_parse_program_instream( void )
 {
     int len;
@@ -414,7 +420,6 @@ int cap_parse_program_instream( void )
             haup_pvr_video_packet();
             pes_process();
             // Add a PCR when needed
-            cap_pcr_to_ts();
             cap_video_pes_to_ts();
             cap_video_present();
             // Get ready for next PES packet
@@ -434,7 +439,6 @@ int cap_parse_program_instream( void )
             // Do any required extra processing
             haup_pvr_audio_packet();
             pes_process();
-            cap_pcr_to_ts();
             cap_audio_pes_to_ts();
             cap_audio_present();
             // Get ready for next PES packet

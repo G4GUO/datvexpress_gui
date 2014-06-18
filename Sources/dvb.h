@@ -128,6 +128,7 @@ void dvb_modulate_init(void);
 void dvb_tx_frame_ctl( sys_config *info );
 void dvb_tx_frame_init(void);
 void dvb_tx_frame( uchar *tp );
+void dvb_tx_encode_and_transmit_tp_raw( uchar *tp );
 void dvb_tx_encode_and_transmit_tp( uchar *tp );
 
 // dvbs_receive.cpp
@@ -159,7 +160,6 @@ int ts_multi_pad( void );
 void increment_null_count( void );
 int flow_read_null_count( void );
 void tx_write_transport_queue( uchar *tp );
-void tx_write_transport_queue_silent( uchar *tp );
 void tx_write_transport_queue_elementary( uchar *tp );
 uchar *tx_read_transport_queue( void );
 void tx_init_transport_flow( void );
