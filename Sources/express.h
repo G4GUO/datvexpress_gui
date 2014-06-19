@@ -1,5 +1,6 @@
 #ifndef EXPRESS_H
 #define EXPRESS_H
+#include "dvb.h"
 #include "dvb_types.h"
 #include "dvb_gen.h"
 #include "dvb_buffer.h"
@@ -12,7 +13,14 @@
 #define EP2OUT         0x02
 
 #define USB_TIMEOUT    1000
+
+#ifdef __LP64__
 #define N_USB_TX_BUFFS 20
+#else
+#define N_USB_TX_BUFFS 200
+#endif
+
+
 //
 // Addresses of various I2C devices on the DATVExpress board
 // Everything has an address including the FPGA

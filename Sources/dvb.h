@@ -2,6 +2,7 @@
 #ifndef DVB_H_
 #define DVB_H_
 
+#include <limits.h>
 #include "express.h"
 #include "dvb_gen.h"
 #include "dvb_config.h"
