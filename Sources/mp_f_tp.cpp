@@ -27,10 +27,6 @@ int tp_fmt( uchar *b, tp_hdr *hdr )
         b[3] |= (hdr->adaption_field_control << 4);
         b[3] |= (hdr->continuity_counter);
         len = 4;
-        if((hdr->adaption_field_control == 0x02)||(hdr->adaption_field_control == 0x03))
-        {
-
-        }
         return len;
 }
 void update_cont_counter( uchar *b )
@@ -174,6 +170,60 @@ int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c )
     tx_write_transport_queue_elementary( m_tp_pkt );
     return stuff;
 }
+int f_send_pes_last_tp_lcl( uchar *b, int bytes, int pid, uchar c, bool pcr )
+{
+    int  len,stuff,field;
+    tp_hdr hdr;
+
+    // Header
+    hdr.transport_error_indicator    = 0;
+    hdr.payload_unit_start_indicator = 0;
+    hdr.transport_priority           = 0 ;
+    hdr.pid                          = pid;
+    hdr.transport_scrambling_control = 0;
+    hdr.continuity_counter           = c;
+
+    hdr.adaption_field_control       = 0x03;//Adaption and Payload
+    len = tp_fmt( m_tp_pkt, &hdr );
+
+    if(pcr)
+    {
+        // Add PCR field
+        field = pcr_fmt( &m_tp_pkt[len] );
+        len += field;
+        field--;//Don't count adaption length field
+        stuff = TP_LEN - (len + bytes);
+    }
+    else
+    {
+        m_tp_pkt[len++] = 0;// Temp zero adaption length
+        m_tp_pkt[len++] = 0;// Clear adaption flags
+        field           = 1;// Adaption field length (adaption flags only)
+        stuff           = TP_LEN - (len + bytes);
+    }
+    // Add the stuff
+    for( int i = 0; i < stuff; i++ )
+    {
+        m_tp_pkt[len++] = 0xFF;
+    }
+    // Set the Adaption field length, length does not include the length field itself
+    m_tp_pkt[4] = stuff+field;
+    // Add the payload
+    memcpy( &m_tp_pkt[len], b, bytes );
+    return stuff;
+}
+int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
+{
+    f_send_pes_last_tp_lcl( b, bytes, pid, c, pcr );
+    tx_write_transport_queue_elementary( m_tp_pkt );
+
+}
+int f_send_pes_last_tp_raw( uchar *b, int bytes, int pid, uchar c, bool pcr )
+{
+    f_send_pes_last_tp_lcl( b, bytes, pid, c, pcr );
+    dvb_tx_encode_and_transmit_tp_raw( m_tp_pkt );
+}
+
 int f_send_pes_pcr_tp( int pid, uchar c )
 {
     int  len,afl;
@@ -192,7 +242,7 @@ int f_send_pes_pcr_tp( int pid, uchar c )
     afl = len;
     // Add PCR field
     len += pcr_fmt( &tp_pkt[len]  );
-    tp_pkt[afl] = 183;// Special case fof afc = 0x02
+    tp_pkt[afl] = 183;// Special case of afc = 0x02
     for( int i = len ; i < TP_LEN; i++ )
     {
         tp_pkt[i] = 0xFF;

@@ -231,7 +231,6 @@ int dvb_start( void )
     dvb_modulate_init();
     display_logger_init();
     dvb_si_init();
-    pcr_scr_init();
     dvbs_modulate_init();
     dvb_encode_init();
     dvb_interleave_init();
@@ -244,6 +243,7 @@ int dvb_start( void )
     dvb_ts_if_init();
     eq_initialise();
     tp_file_logger_init();
+    pcr_scr_init();
     dvb_s2_start();// Must be called before cap is initialised
 
     // Now configure the ouput devices

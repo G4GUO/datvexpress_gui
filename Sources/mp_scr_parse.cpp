@@ -5,7 +5,7 @@
 #include "dvb_capture_ctl.h"
 
 #define MPEG_CLK     27000000
-#define PCR_DELAY    ((int)(PVR_PCR_DELAY*27000000))
+#define PCR_DELAY    ((int64_t)(PVR_PCR_DELAY*27000000))
 #define PCR_ERROR    270000000
 #define PCR_INTERVAL 945000
 
@@ -18,6 +18,7 @@ static int64_t m_scr_clk;
 static int64_t m_scr_clk_last;
 static int64_t m_pcr_scr_offset;
 static int64_t m_pcr_clk_last;
+static int64_t m_v;
 static int    m_packets_sent;
 static int    m_bitrate;
 static int    m_error_ms;
@@ -25,10 +26,7 @@ static int    m_pcr_sync;
 
 void pcr_transport_packet_clock_update(void)
 {
-    // Calculate the time in seconds
-    double v = get_bits_in_transport_packet();
-    v = ( v*MPEG_CLK / get_raw_bitrate());
-    m_pcr_clk   += (int)v;
+    m_pcr_clk   += m_v;
     m_packets_sent++;
 }
 //
@@ -77,6 +75,15 @@ bool is_pcr_update(void)
         return true;
     }
     return false;
+}
+
+int get_pcr_overhead_size(void)
+{
+    // PCR updated every PCR_INTERVAL
+    if((m_pcr_clk - m_pcr_clk_last) >= PCR_INTERVAL)
+        return 12;
+    else
+        return 4;
 }
 
 //
@@ -335,8 +342,8 @@ void post_pes_actions( uchar *b )
         // Audio
         if( pts > 0 )
         {
-            post_ts( pts );
-//            printf("Audio difference %f\n", (m_pcr_clk - PCR_DELAY - pts)*1000.0/MPEG_CLK);
+           // post_ts( pts );
+            printf("Audio difference %f\n", (m_pcr_clk - PCR_DELAY - pts)*1000.0/MPEG_CLK);
         }
     }
     if(b[3] == 0xE0 )
@@ -348,7 +355,7 @@ void post_pes_actions( uchar *b )
         }
         if((pts>0)&&(dts==0))
         {
-//            printf("Video difference %f\n", (m_dpcr_clk - PCR_DELAY - dpts)*1000/MPEG_CLK);
+           printf("Video difference %f\n", (m_pcr_clk - PCR_DELAY - pts)*1000.0/MPEG_CLK);
         }
     }
     return;
@@ -530,4 +537,6 @@ void pcr_scr_init(void)
     m_pcr_clk_last = 0;
     m_pcr_clk      = 0;
     m_pcr_sync     = 1;
+    // Calculate the pcr packet delta in seconds
+    m_v = pcr_increment();
 }

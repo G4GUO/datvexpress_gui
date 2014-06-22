@@ -84,10 +84,7 @@
 // Final buffering queue. these are blocks of samples
 #define TX_BUFFER_LENGTH 512
 // Delays to get the HAUPAUGE to work
-#define PVR_VIDEO_DELAY 0.01
-#define PVR_PCR_DELAY   0.2
-// Maximum NULL packet seperation
-#define MAX_NULL_SEPERATION 100
+#define PVR_PCR_DELAY   0.08
 
 // PTT status
 #define DVB_RECEIVING           0

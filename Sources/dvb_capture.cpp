@@ -34,13 +34,15 @@ uchar m_b[2048];
 static int m_video_present;
 static int m_audio_present;
 
-#define VIDEO_B_SIZE 2000
+#define PVR_VIDEO_DELAY 95
+#define VIDEO_B_SIZE 200
+
 static VideoBuffer m_vbuf[VIDEO_B_SIZE];
-static int m_vbp;
+static int         m_vbp;
 
 VideoBuffer *video_delay(uchar *h, int l)
 {
-    static int delay = 40;
+    static int delay = PVR_VIDEO_DELAY;
     // Save the header
     memcpy( m_vbuf[m_vbp].b, h, 6);
     m_vbuf[m_vbp].l = l + 6;
@@ -239,6 +241,15 @@ info.pcr_pid = info.video_pid;
     return 0;
 }
 */
+
+int get_video_overhead(void)
+{
+    if( m_sysc.video_pid == m_sysc.pcr_pid )
+        return get_pcr_overhead_size();
+    else
+        return 4;// No Adaption field
+}
+
 //
 // Create transport packets from the program stream pulled from the video input
 // len is the total length of the program packet.
@@ -271,7 +282,7 @@ void cap_video_pes_to_ts( void )
     m_video_seq = (m_video_seq+1)&0x0F;
 
     // Send the middle
-    while( payload_remaining >= PES_PAYLOAD_LENGTH )
+    while( payload_remaining > (PES_PAYLOAD_LENGTH - get_video_overhead()))
     {
         overhead = 4;
         ph       = false;
@@ -290,8 +301,11 @@ void cap_video_pes_to_ts( void )
     // Send the last
     if( payload_remaining > 0 )
     {
-        pes_read( b, payload_remaining);
-        f_send_pes_last_tp( b, payload_remaining, m_sysc.video_pid, m_video_seq );
+//        if(get_video_overhead() == 12 ) printf("%d\n",payload_remaining);
+        ph = false;
+        if(pcr_in_video  == true ) ph = is_pcr_update();
+        pes_read( b, payload_remaining );
+        f_send_pes_last_tp( b, payload_remaining, m_sysc.video_pid, m_video_seq, ph );
         m_video_seq = (m_video_seq+1)&0x0F;
     }
 }
@@ -414,14 +428,13 @@ int cap_parse_program_instream( void )
 //            pes_write_from_memory( m_b, 6 );
             // Save the elementary payload
             pes_write_from_memory( v->b, v->l );
-//            pes_write_from_capture( len );
-//            len += 6;
             // Do any required extra processing
             haup_pvr_video_packet();
             pes_process();
             // Add a PCR when needed
             cap_video_pes_to_ts();
             cap_video_present();
+//           post_pes_actions( v->b );
             // Get ready for next PES packet
             pes_reset();
             break;
@@ -441,6 +454,7 @@ int cap_parse_program_instream( void )
             pes_process();
             cap_audio_pes_to_ts();
             cap_audio_present();
+//          post_pes_actions( m_b );
             // Get ready for next PES packet
             pes_reset();
             break;
