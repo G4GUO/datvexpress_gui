@@ -92,7 +92,7 @@ void pat_fmt( void )
 //
 void pat_dvb( void )
 {
-    tx_write_transport_queue( pat_pkt );
+    ts_write_transport_queue( pat_pkt );
     update_cont_counter( pat_pkt );
 }
 

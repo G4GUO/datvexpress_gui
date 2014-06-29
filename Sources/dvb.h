@@ -155,13 +155,14 @@ double  final_txq_time_delay( void );
 int ts_single_stream( void );
 int ts_multi_stream( void );
 int ts_multi_pad( void );
+void ts_enable_si( bool status );
 void increment_null_count( void );
 int flow_read_null_count( void );
-void tx_write_transport_queue( uchar *tp );
-void tx_write_transport_queue_elementary( uchar *tp );
-uchar *tx_read_transport_queue( void );
-void tx_init_transport_flow( void );
-int tx_queue_percentage(void);
+void ts_write_transport_queue( uchar *tp );
+void ts_write_transport_queue_elementary( uchar *tp );
+uchar *ts_read_transport_queue( void );
+void ts_init_transport_flow( void );
+int ts_queue_percentage(void);
 
 // DVB
 double dvb_get_tx_interpolator_rate( void );
@@ -182,8 +183,8 @@ void eq_receive( void );
 
 // Elementary stream
 int pes_find_payload( uchar *b );
-int pes_video_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts );
-int pes_audio_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts );
+void pes_video_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts );
+void pes_audio_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts );
 
 // Firewire
 #define DV_PAL_FRAME_LENGTH 144000

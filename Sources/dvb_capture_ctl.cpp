@@ -20,7 +20,7 @@
 #include <iostream>
 #include <linux/videodev2.h>
 #ifdef _USE_SW_CODECS
-#include <alsa/asoundlib.h>
+#include <an_capture.h>
 #endif
 #include "dvb_capture_ctl.h"
 #include "mp_ts_ids.h"
@@ -177,9 +177,9 @@ void dvb_cap_set_analog_standard( int fd, int std )
         return;
     }
 
-    if( std ==  V4L2_STD_PAL_BG )
+    if( std ==  V4L2_STD_PAL )
     {
-        std_id = V4L2_STD_PAL_BG;
+        std_id = V4L2_STD_PAL;
 
         if (-1 == ioctl (fd, VIDIOC_S_STD, &std_id)) {
             loggerf("VIDIOC_S_STD Err");
@@ -252,7 +252,7 @@ int open_named_capture_device( const char *name )
     for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
     {
         sprintf(m_v4l_capture_device,"/dev/video%d",i);
-        if((fd = open( m_v4l_capture_device, O_RDWR  )) > 0 )
+        if((fd = open( m_v4l_capture_device, O_RDWR )) > 0 )
         {
             if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
             {
@@ -406,7 +406,7 @@ void dvb_cap_ctl( void )
         ctl.value = 1;
         if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
         {
-            loggerf("CAP Error V4L2_CID_MPEG_VIDEO_B_FRAMES\n");
+            loggerf("CAP Error V4L2_CID_MPEG_VIDEO_B_FRAMES");
         }
 
 // v4l2-ctl --set-input=2				#Composite input for PVR-150 = 2
@@ -527,51 +527,9 @@ void dvb_cap_ctl( void )
 
     if((info.capture_device_type == DVB_V4L)&&(info.capture_stream_type  == DVB_YUV))
     {
-        // Analogue Video capture
-        dvb_cap_set_analog_standard( fd, V4L2_STD_PAL_BG );
-        struct v4l2_format fmt;
-        memset(&fmt, 0, sizeof(v4l2_format));
-        fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width       = PAL_WIDTH;
-        fmt.fmt.pix.height      = PAL_HEIGHT;
-        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
-        fmt.fmt.pix.field       = V4L2_FIELD_ANY;
-        if (ioctl(fd, VIDIOC_S_FMT, &fmt) < 0)
-        {
-            logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
-        }
-        //	input = V4L2_INPUT_TYPE_CAMERA;
-        input = info.capture_device_input;
-
-        if( ioctl( fd, VIDIOC_S_INPUT, &input) < 0 )
-        {
-            loggerf("CAP Error VIDIOC_S_INPUT %d",input);
-        }
+        an_configure_capture_card();
         info.video_bitrate = calculate_video_bitrate();
-
-        // Analogue sound capture
-        snd_pcm_hw_params_t *hw_params;
-
-        if(snd_pcm_open(&m_audio_handle, "pulse", SND_PCM_STREAM_CAPTURE, 0)< 0 )
-        {
-            loggerf("Unable to open sound device");
-            return;
-        }
-        unsigned int rate = 48000;
-        snd_pcm_hw_params_malloc(&hw_params);
-        snd_pcm_hw_params_any(m_audio_handle, hw_params);
-        snd_pcm_hw_params_set_access(m_audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
-        snd_pcm_hw_params_set_format(m_audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
-        snd_pcm_hw_params_set_rate_near(m_audio_handle, hw_params, &rate, 0);
-        snd_pcm_hw_params_set_channels(m_audio_handle, hw_params, 2);
-        snd_pcm_hw_params(m_audio_handle, hw_params);
-        snd_pcm_hw_params_free(hw_params);
-        snd_pcm_prepare(m_audio_handle);
-
-        an_init( &fmt );
-
         dvb_config_save_and_update( &info );
-
     }
 #endif
 
@@ -628,7 +586,7 @@ void dvb_close_capture_device(void)
        close( m_i_fd );
     }
 #ifdef _USE_SW_CODECS
-    if(info.capture_device_type == DVB_ANALOG )
+    if(info.capture_device_type == DVB_YUV )
         snd_pcm_close(m_audio_handle);
 #endif
     m_i_fd = 0;

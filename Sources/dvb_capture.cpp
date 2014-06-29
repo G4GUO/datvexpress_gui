@@ -374,7 +374,7 @@ int cap_get_len( uchar *b )
 // This parses a program stream from a Hauppauge device
 // and sends it as a Transport stream.
 //
-int cap_parse_program_instream( void )
+void cap_parse_hp_program_instream( void )
 {
     int len;
     VideoBuffer *v;
@@ -464,12 +464,11 @@ int cap_parse_program_instream( void )
             loggerf("Unknown Header %.2x len %d",m_b[3],len);
             break;
     }
-    return 0;
 }
 //
 // Process a transport stream coming from the card.
 //
-void cap_parse_transport_instream( void )
+void cap_parse_hp_transport_instream( void )
 {
     uchar b[MP_T_FRAME_LEN];
     cap_rd_bytes( b, MP_T_FRAME_LEN );
@@ -513,17 +512,6 @@ int cap_parse_dv_dif_instream( void )
     return 0;
 }
 */
-//
-// Parse the input stream.
-//
-int cap_parse_instream( void )
-{
-    // Need to know the stream type
-    if( m_sysc.capture_stream_type == DVB_PROGRAM   ) cap_parse_program_instream();
-    if( m_sysc.capture_stream_type == DVB_TRANSPORT ) cap_parse_transport_instream();
-//    if( info.capture_stream_type == DVB_DV )        cap_parse_dv_dif_instream();
-    return 0;
-}
 //
 // This gets a list of the capture devices on the system
 //
@@ -618,6 +606,12 @@ void video_capture_stream_and_device_type( const char *driver )
     }
 
     if(strncmp((const char*)driver,"saa7134",7) == 0)
+    {
+        info.capture_stream_type = DVB_YUV;
+        info.capture_device_type = DVB_V4L;
+        info.video_codec_type    = CODEC_MPEG2;
+    }
+    if(strncmp((const char*)driver,"sonixj",10) == 0)
     {
         info.capture_stream_type = DVB_YUV;
         info.capture_device_type = DVB_V4L;

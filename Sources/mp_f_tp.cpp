@@ -109,7 +109,7 @@ int f_send_pes_first_tp( uchar *b, int pid, uchar c, bool pcr )
         len = tp_fmt( m_tp_pkt, &hdr );
         memcpy( &m_tp_pkt[len], b, TP_LEN-len );
     }
-    tx_write_transport_queue_elementary( m_tp_pkt );
+    ts_write_transport_queue_elementary( m_tp_pkt );
     return (TP_LEN-len);
 }
 int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
@@ -142,11 +142,11 @@ int f_send_pes_next_tp( uchar *b, int pid, uchar c, bool pcr )
         len = tp_fmt( m_tp_pkt, &hdr );
         memcpy( &m_tp_pkt[len], b, TP_LEN-len );
     }
-    tx_write_transport_queue_elementary( m_tp_pkt );
+    ts_write_transport_queue_elementary( m_tp_pkt );
     return (TP_LEN-len);
 }
 
-int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c )
+void f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c )
 {
     int  len,stuff;
     tp_hdr hdr;
@@ -167,10 +167,9 @@ int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c )
     len += stuff;
     // Add the payload
     memcpy( &m_tp_pkt[len], b, bytes );
-    tx_write_transport_queue_elementary( m_tp_pkt );
-    return stuff;
+    ts_write_transport_queue_elementary( m_tp_pkt );
 }
-int f_send_pes_last_tp_lcl( uchar *b, int bytes, int pid, uchar c, bool pcr )
+void f_send_pes_last_tp_lcl( uchar *b, int bytes, int pid, uchar c, bool pcr )
 {
     int  len,stuff,field;
     tp_hdr hdr;
@@ -210,21 +209,20 @@ int f_send_pes_last_tp_lcl( uchar *b, int bytes, int pid, uchar c, bool pcr )
     m_tp_pkt[4] = stuff+field;
     // Add the payload
     memcpy( &m_tp_pkt[len], b, bytes );
-    return stuff;
 }
-int f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
+void f_send_pes_last_tp( uchar *b, int bytes, int pid, uchar c, bool pcr )
 {
     f_send_pes_last_tp_lcl( b, bytes, pid, c, pcr );
-    tx_write_transport_queue_elementary( m_tp_pkt );
+    ts_write_transport_queue_elementary( m_tp_pkt );
 
 }
-int f_send_pes_last_tp_raw( uchar *b, int bytes, int pid, uchar c, bool pcr )
+void f_send_pes_last_tp_raw( uchar *b, int bytes, int pid, uchar c, bool pcr )
 {
     f_send_pes_last_tp_lcl( b, bytes, pid, c, pcr );
     dvb_tx_encode_and_transmit_tp_raw( m_tp_pkt );
 }
 
-int f_send_pes_pcr_tp( int pid, uchar c )
+void f_send_pes_pcr_tp( int pid, uchar c )
 {
     int  len,afl;
     tp_hdr hdr;
@@ -248,7 +246,6 @@ int f_send_pes_pcr_tp( int pid, uchar c )
         tp_pkt[i] = 0xFF;
     }
     dvb_tx_encode_and_transmit_tp_raw( tp_pkt );
-    return TP_LEN;
 }
 //
 // Send a sequence of PES packets, normally from a file

@@ -29,7 +29,7 @@ void dvb_tx_frame_init(void)
 
 bool below_null_threshold(void)
 {
-    if(tx_queue_percentage() < 50) return true;
+    if(ts_queue_percentage() < 50) return true;
     return false;
 }
 

@@ -16,15 +16,18 @@
 using namespace std ;
 
 #ifdef _USE_SW_CODECS
-
 // AVCONV is a C application so we need to tell everyone
 // so the linker knows what we are talking about
 //
+
 extern "C"
 {
+#include <alsa/asoundlib.h>
 #include <libavutil/mem.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
+#include <libavutil/pixfmt.h>
+#include <libavutil/pixdesc.h>
 #include <libavfilter/buffersink.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
@@ -39,6 +42,7 @@ extern "C"
 #endif
 
 // Set the capture size of the image
+void an_configure_capture_card( void );
 // Initialise this module
 int an_init( v4l2_format *fmt );
 // capture an image and sound

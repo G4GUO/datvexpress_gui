@@ -171,7 +171,7 @@ void pmt_fmt( void )
 //
 void pmt_dvb( void )
 {
-    tx_write_transport_queue( pmt_pkt );
+    ts_write_transport_queue( pmt_pkt );
     update_cont_counter( pmt_pkt );
 }
 

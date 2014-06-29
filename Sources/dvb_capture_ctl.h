@@ -6,9 +6,11 @@
 
 #include "dvb_config.h"
 
-#define PAL_WIDTH  704
-#define PAL_HEIGHT 576
-#define PAL_SOUND_CAPTURE_SIZE 1920
+#define PAL_WIDTH_CAPTURE  720
+#define PAL_HEIGHT_CAPTURE 576
+#define PAL_WIDTH_ENCODE   720
+#define PAL_HEIGHT_ENCODE  576
+#define PAL_SOUND_CAPTURE_SIZE 1152
 
 //#define PAL_WIDTH  640
 //#define PAL_HEIGHT 480
@@ -43,5 +45,7 @@ int open_named_capture_device( const char *name );
 int calculate_video_bitrate(void);
 void video_capture_stream_and_device_type( const char *driver );
 void cap_pcr_to_ts( void );
+void cap_parse_hp_transport_instream( void );
+void cap_parse_hp_program_instream( void );
 
 #endif

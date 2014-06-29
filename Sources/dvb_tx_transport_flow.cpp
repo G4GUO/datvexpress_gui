@@ -30,9 +30,9 @@ extern bool m_sdt_flag;
 extern bool m_nit_flag;
 extern bool m_tdt_flag;
 
-static int m_null_count;
-static int m_null_items;
-
+static int   m_null_count;
+static int   m_null_items;
+static bool  m_add_si;
 //
 // Used to tell how many nulls have been sent.
 //
@@ -49,10 +49,18 @@ int flow_read_null_count( void )
     m_null_count = 0;
     return ival;
 }
-int tx_queue_percentage(void)
+int ts_queue_percentage(void)
 {
     return ((final_tx_queue_size()*100)/m_final_txq_len);
 }
+//
+// Switch on SI tables
+//
+void ts_enable_si( bool status )
+{
+    m_add_si = status;
+}
+
 //
 // This transmits the SI tables necessary for a single ts.
 //
@@ -135,7 +143,7 @@ int ts_multi_stream( void )
 //
 int ts_multi_pad( void )
 {
-    if( tx_queue_percentage() < 10 )
+    if( ts_queue_percentage() < 10 )
     {
         // Emergency measures to stop dropouts
         padding_null_dvb();
@@ -151,7 +159,7 @@ int ts_multi_pad( void )
 //
 // This is the big daddy.
 //
-void tx_write_transport_queue( uchar *tp )
+void ts_write_transport_queue( uchar *tp )
 {
     // Get exclusive access
     pthread_mutex_lock( &mutex );
@@ -163,19 +171,25 @@ void tx_write_transport_queue( uchar *tp )
 //
 // Elementary streams call this to prevent re-entrancy
 //
-void tx_write_transport_queue_elementary( uchar *tp )
+void ts_write_transport_queue_elementary( uchar *tp )
 {
-    tx_write_transport_queue( tp );
+    ts_write_transport_queue( tp );
+
     // Send SI if required
-    ts_single_stream();
+    if(  m_add_si == true)
+    {
+        ts_single_stream();
+        ts_multi_stream();
+    }
 }
 //
 // Initialise this module
 //
-void tx_init_transport_flow( void )
+void ts_init_transport_flow( void )
 {
     // Create the mutex
     pthread_mutex_init( &mutex, NULL );
 
+    m_add_si = false;
     m_null_items = 0;
 }

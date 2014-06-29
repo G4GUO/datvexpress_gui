@@ -20,21 +20,21 @@ void dvb_video_tp( uchar *tp )
 {
     tp[1] = (tp[1]&0xE0) | (t_info.required_video_id>>8);
     tp[2] = t_info.required_video_id&0xFF;
-    tx_write_transport_queue( tp );
+    ts_write_transport_queue( tp );
 }
 
 void dvb_audio_tp( uchar *tp )
 {
     tp[1] = (tp[1]&0xE0) | (t_info.required_audio_id>>8);
     tp[2] = t_info.required_audio_id&0xFF;
-    tx_write_transport_queue( tp );
+    ts_write_transport_queue( tp );
 }
 
 void dvb_pcr_tp( uchar *tp )
 {
     tp[1] = (tp[1]&0xE0) | (t_info.required_pcr_id>>8);
     tp[2] = t_info.required_pcr_id&0xFF;
-    tx_write_transport_queue( tp );
+    ts_write_transport_queue( tp );
 }
 
 void dvb_parse_pmt( uchar *b )

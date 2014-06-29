@@ -134,6 +134,6 @@ void nit_fmt( void )
 }
 void nit_dvb( void )
 {
-    tx_write_transport_queue( nit_pkt );
+    ts_write_transport_queue( nit_pkt );
     update_cont_counter( nit_pkt );
 }

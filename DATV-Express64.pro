@@ -25,12 +25,14 @@ FORMS    += mainwindow.ui \
             Capturedialog.ui
 
 unix{
-    CONFIG += link_pkgconfig
+    CONFIG    += link_pkgconfig
     PKGCONFIG += libusb-1.0
+#    PKGCONFIG += libavutil
 }
+
 LIBS += -lfftw
-#//LIBS += -lavformat -lavcodec -lavutil -lswscale -lmp3lame -lx264 -lavfilter -lz -lrt
-#//LIBS += -lasound
+#LIBS += -lavformat -lavcodec -lavutil -lswresample -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2 -lpthread
+#LIBS += -lasound
 
 INCLUDEPATH += Sources
 

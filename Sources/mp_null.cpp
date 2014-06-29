@@ -31,7 +31,7 @@ void padding_null_dvb( void )
 {
     update_cont_counter( null_pkt );
     increment_null_count();
-    tx_write_transport_queue( null_pkt );
+    ts_write_transport_queue( null_pkt );
 }
 uchar *get_padding_null_dvb( void )
 {

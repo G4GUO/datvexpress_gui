@@ -150,7 +150,7 @@ void eit_dvb( void )
         // Update the sequence count field for this packet
         set_cont_counter( m_pkts.frames[i], m_pkts.seq_count );
         // Send the packet
-        tx_write_transport_queue( m_pkts.frames[i] );
+        ts_write_transport_queue( m_pkts.frames[i] );
         // Update the sequence count
         m_pkts.seq_count = (m_pkts.seq_count+1)&0x0F;
     }

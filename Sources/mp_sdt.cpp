@@ -116,6 +116,6 @@ void sdt_fmt( void )
 }
 void sdt_dvb( void )
 {
-    tx_write_transport_queue( sdt_pkt );
+    ts_write_transport_queue( sdt_pkt );
     update_cont_counter( sdt_pkt );
 }

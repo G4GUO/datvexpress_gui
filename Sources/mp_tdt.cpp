@@ -61,5 +61,5 @@ void tdt_dvb( void )
     // Place marker in the buffer queue
     //tdt_pkt[0] = TDT_FLAG;
     tdt_fmt( tdt_pkt );// The time will be behind by a few seconds
-    tx_write_transport_queue( tdt_pkt );
+    ts_write_transport_queue( tdt_pkt );
 }

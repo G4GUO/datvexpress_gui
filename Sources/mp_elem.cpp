@@ -55,11 +55,11 @@ void pes_add_pts_dts( uchar *b, int64_t ts )
     b[4] |= 0x01;// Marker bit
 }
 //
-// Add PTS and DTS fields
+// Add PTS and DTS fields, returns offset into array after the fields
 //
 int pes_add_pts_dts( uchar *b, int64_t pts, int64_t dts )
 {
-    if((pts >= 0)&&(dts>=0))
+    if((pts > 0)&&(dts > 0))
     {
         // Both PTS and DTS required
         b[7] = 0xC0;
@@ -68,18 +68,18 @@ int pes_add_pts_dts( uchar *b, int64_t pts, int64_t dts )
         pes_add_pts_dts( &b[9],  pts );
         b[14] = 0x10;
         pes_add_pts_dts( &b[14], dts );
-        return 20;
+        return 19;
     }
     else
     {
-        if( pts >= 0 )
+        if( pts > 0 )
         {
             // PTS only required
             b[7] = 0x80;
             b[8] = 5; // extra header length
             b[9] = 0x20;
             pes_add_pts_dts( &b[9], pts );
-            return 15;
+            return 14;
         }
         else
         {
@@ -94,46 +94,50 @@ int pes_add_pts_dts( uchar *b, int64_t pts, int64_t dts )
 //
 // form a pes packet from the video elementary stream
 //
-int pes_video_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts )
+void pes_video_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts )
 {
     int len,start;
     uchar d[40];
 
+//    for( int i = 0; i < length; i++ ) printf("%.2x ",b[i]);
+//    printf("\n\n");
+    pes_reset();
     d[0] = 0x00;
     d[1] = 0x00;
     d[2] = 0x01;
     d[3] = 0xE0;
-
+    // Length field 2 bytes
     d[6] = 0x84;// Data aligned
     start = pes_add_pts_dts( d, pts, dts );
-    len = length + start;
+
+    len = length + start - 6;
     // Set the length of the packet
-    d[4] = (len-6)>>8;
-    d[5] = (len-6)&0xFF;
+    d[4] = (len)>>8;
+    d[5] = (len)&0xFF;
     pes_write_from_memory( d, start );
     pes_write_from_memory( b, length );
-    return len;
 }
 //
 // form a pes packet from the video elementary stream
 //
-int pes_audio_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts )
+void pes_audio_el_to_pes( uchar *b, int length, int64_t pts, int64_t dts )
 {
     int len,start;
     uchar d[40];
-
+//       for( int i = 0; i < length; i++ ) printf("%.2x ",b[i]);
+//        printf("\n\n");
     d[0] = 0x00;
     d[1] = 0x00;
     d[2] = 0x01;
     d[3] = 0xC0;
-
+    // Length field
     d[6] = 0x84;// Data aligned
+    pes_reset();
     start = pes_add_pts_dts( d, pts, dts );
-    len = length + start;
+    len = length + start - 6;
     // Set the length of the packet
-    d[4] = (len-6)>>8;
-    d[5] = (len-6)&0xFF;
+    d[4] = (len>>8);
+    d[5] = (len&0xFF);
     pes_write_from_memory( d, start );
     pes_write_from_memory( b, length );
-    return len;
 }

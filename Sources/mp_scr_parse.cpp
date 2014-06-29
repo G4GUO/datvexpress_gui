@@ -476,7 +476,7 @@ void post_ts( int64_t ts )
     }
     // Let the PCR catch up if needed by inserting either SI tables or NULLs
     while(((m_pcr_clk + pcr_increment()) < (ts*300)) &&
-          (tx_queue_percentage() < 30) &&
+          (ts_queue_percentage() < 30) &&
           ((m_pcr_clk - m_pcr_clk_last) < PCR_INTERVAL))
     {
         pad_stream();
@@ -490,13 +490,20 @@ void post_ts( int64_t ts )
 //
 void force_pcr(int64_t ts)
 {
+    if(m_pcr_sync)
+    {
+        m_pcr_sync = 0;
+        m_pcr_clk  = ts*300;
+        return;
+    }
     // Set the PCR to the value ts
-    while(((m_pcr_clk + pcr_increment()) < (ts)) &&
-          (tx_queue_percentage() < 30) &&
+    while(((m_pcr_clk + pcr_increment()) < (ts*300)) &&
+          (ts_queue_percentage() < 30) &&
           ((m_pcr_clk - m_pcr_clk_last) < PCR_INTERVAL))
     {
         pad_stream();
     }
+    if((m_pcr_clk - PCR_DELAY) > (ts*300)) m_pcr_sync = 1;
 }
 //
 // We use the audio packet pts values to retain sync

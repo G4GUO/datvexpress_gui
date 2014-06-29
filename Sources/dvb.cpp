@@ -30,6 +30,7 @@
 #include "an_capture.h"
 
 //Transcoder transcoder;
+static sys_config m_cfg;
 
 static int m_dvb_major_txrx_status;
 static int m_dvb_minor_txrx_status;
@@ -65,14 +66,46 @@ int dvb_is_system_running( void )
 //
 void *dvb_task_capture_blocking( void *arg )
 {
-    // Purge the capture device
-    cap_purge();
     // This blocks
-    while( m_dvb_capture_running )
+    //
+    // Parse the input stream.
+    //
+    // Need to know the stream type
+    if( m_cfg.capture_stream_type == DVB_PROGRAM   )
     {
-        dvb_block_rx_check();
-        cap_parse_instream();
+        while( m_dvb_capture_running )
+        {
+            // Purge the capture device
+            cap_purge();
+            cap_parse_hp_program_instream();
+        }
+        return arg;
     }
+
+    if( m_cfg.capture_stream_type == DVB_TRANSPORT )
+    {
+        while( m_dvb_capture_running )
+        {
+            // Purge the capture device
+            cap_purge();
+            cap_parse_hp_transport_instream();
+        }
+        return arg;
+    }
+#ifdef _USE_SW_CODECS
+    if( m_cfg.capture_stream_type == DVB_YUV )
+    {
+
+        while( m_dvb_capture_running )
+        {
+            // Start the analog capture processes
+            // This does not need to run
+            return arg;
+        }
+        return arg;
+    }
+#endif
+    //    if( info.capture_stream_type == DVB_DV )        cap_parse_dv_dif_instream();
     return arg;
 }
 //
@@ -95,26 +128,8 @@ void *udp_proc( void *arg )
     while( m_dvb_running )
     {
         uchar *tp = udp_get_transport_packet();
-        if(tp != NULL) tx_write_transport_queue( tp );
+        if(tp != NULL) ts_write_transport_queue( tp );
         sleep(0);
-    }
-    return arg;
-}
-//
-// This process adds the SI tables
-//
-void *si_proc( void *arg )
-{
-    struct timespec tim;
-
-    tim.tv_sec  = 0;
-    tim.tv_nsec = 10000000; // 10 ms
-
-    while( m_dvb_capture_running )
-    {
-        ts_multi_stream();
-        // So the task does not hog all the CPU
-        nanosleep( &tim, NULL);
     }
     return arg;
 }
@@ -131,83 +146,71 @@ void dvb_serious_error( void )
 //
 int dvb_initialise_system(void)
 {
-    sys_config cfg;
     int res;
-    dvb_config_get( &cfg );
+    dvb_config_get( &m_cfg );
 
     //if((res=init_firewire())<0)loggerf("Firewire failed %d\n",res);
     m_dvb_running = 1;// This keeps threads running, assume it is going to work
     m_dvb_capture_running = 1;
 
+    //
+    // Create the Transmit thread
+    //
     // Set the hw frequency and the level to zero as we are in rx at start
-    hw_config( cfg.tx_frequency, 0 );
+    // Create the Transmit sample thread
+    //
+    hw_config( m_cfg.tx_frequency, 0 );
 
-    if((cfg.tx_hardware == HW_EXPRESS_16)||
-       (cfg.tx_hardware == HW_EXPRESS_AUTO)||
-       (cfg.tx_hardware == HW_EXPRESS_8)||
-       (cfg.tx_hardware == HW_EXPRESS_TS)||
-       (cfg.tx_hardware == HW_EXPRESS_UDP))
+    if((m_cfg.tx_hardware == HW_EXPRESS_16)||
+       (m_cfg.tx_hardware == HW_EXPRESS_AUTO)||
+       (m_cfg.tx_hardware == HW_EXPRESS_8)||
+       (m_cfg.tx_hardware == HW_EXPRESS_TS)||
+       (m_cfg.tx_hardware == HW_EXPRESS_UDP))
     {
-        // Create the Transmit sample thread
         res = pthread_create( &dvb_thread[0], NULL, dvb_task_transmit, NULL );
         if( res!= 0 )
         {
             logger("DVB Thread transmit creation failed");
+            return -1;
         }
     }
 
-    if( cfg.capture_device_type == DVB_UDP_TS )
+    //
+    // Create the Capture thread.
+    //
+
+    if( m_cfg.capture_device_type == DVB_UDP_TS )
     {
         // Create the UDP receive socket for capture
         res = pthread_create( &dvb_thread[1], NULL, udp_proc, NULL );
         if( res!= 0 )
         {
             logger("DVB Thread UDP creation failed");
+            return -1;
         }
     }
 
-    if( cfg.capture_device_type == DVB_V4L )
+    if( m_cfg.capture_device_type == DVB_V4L )
     {
-        if( cfg.capture_stream_type == DVB_PROGRAM )
+        // Create the master thread that reads from the video capture device
+        res = pthread_create( &dvb_thread[2], NULL, dvb_task_capture_blocking, NULL );
+        if( res!= 0 )
         {
-            // Create the master thread that reads from the video capture device
-            res = pthread_create( &dvb_thread[2], NULL, dvb_task_capture_blocking, NULL );
-            if( res!= 0 )
-            {
-                logger("DVB Thread (Program) capture blocking creation failed");
-            }
+            logger("DVB Thread V4L capture blocking creation failed");
+            return -1;
         }
-
-        if( cfg.capture_stream_type == DVB_TRANSPORT )
-        {
-            // Create the master thread that reads from the video capture device
-            res = pthread_create( &dvb_thread[2], NULL, dvb_task_capture_blocking, NULL );
-            if( res!= 0 )
-            {
-                logger("DVB Thread (Transport) capture blocking creation failed");
-            }
-        }
-
-#ifdef _USE_SW_CODECS
-        if( cfg.capture_stream_type == DVB_YUV )
-        {
-            // Start the analog capture processes
-            an_start_capture();
-        }
-#endif
+        ts_enable_si( true );
     }
 
+    //
     // Create the timer thread, required for all varients
+    //
     res = pthread_create( &dvb_thread[3], NULL, timer_proc, NULL );
-    if( res!= 0 ) loggerf("DVB Thread Timer creation failed");
-
-    if( cfg.capture_device_type != DVB_UDP_TS )
+    if( res!= 0 )
     {
-        // Create the SI thread, required for all varients except UDP capture
-        res = pthread_create( &dvb_thread[4], NULL, si_proc, NULL );
-        if( res!= 0 ) loggerf("DVB Thread SI creation failed");
+        loggerf("DVB Thread Timer creation failed");
+        return -1;
     }
-
     return(0);
 }
 //
@@ -238,7 +241,7 @@ int dvb_start( void )
     dvb_rs_init();
     dvb_tx_frame_init();
     create_final_tx_queue();
-    tx_init_transport_flow();
+    ts_init_transport_flow();
     dvb_teletext_init();
     dvb_ts_if_init();
     eq_initialise();
@@ -331,8 +334,7 @@ int dvb_get_minor_txrx_status( void )
 void dvb_set_major_txrx_status( int status )
 {
     //struct timespec tim;
-    sys_config cfg;
-    dvb_config_get( &cfg );
+    dvb_config_get( &m_cfg );
 
     //tim.tv_sec  = 0;
     //tim.tv_nsec = 50000000; // 50 ms
@@ -353,8 +355,8 @@ void dvb_set_major_txrx_status( int status )
         //eq_transmit();
         hw_tx();
         // Delay while relays change over
-        hw_level(cfg.tx_level);
-        hw_freq(cfg.tx_frequency);
+        hw_level(m_cfg.tx_level);
+        hw_freq(m_cfg.tx_frequency);
         m_dvb_major_txrx_status = status;
         eq_transmit();
         return;
