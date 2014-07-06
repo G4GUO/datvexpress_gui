@@ -1,7 +1,6 @@
 #ifndef DVB_TYPES_H
 #define DVB_TYPES_H
 
-#include "fftw.h"
 
 typedef struct{
     short re;

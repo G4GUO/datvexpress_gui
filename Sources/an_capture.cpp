@@ -504,7 +504,7 @@ void an_configure_capture_card( void )
         logger("can't get format");
 
     //	input = V4L2_INPUT_TYPE_CAMERA;
-    input = info.capture_device_input;
+    input = info.video_capture_device_input;
 
     if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
     {
@@ -530,6 +530,7 @@ void an_configure_capture_card( void )
     //
     snd_pcm_hw_params_t *hw_params;
 
+
     if(snd_pcm_open(&m_audio_handle, "pulse", SND_PCM_STREAM_CAPTURE, 0)< 0 )
     {
         loggerf("Unable to open sound device");
@@ -554,6 +555,9 @@ void an_configure_capture_card( void )
 
 void an_stop_capture(void)
 {
-    m_capturing = false;
+    if( m_capturing == true )
+    {
+        m_capturing = false;
+    }
 }
 #endif

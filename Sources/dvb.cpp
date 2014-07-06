@@ -35,7 +35,7 @@ static sys_config m_cfg;
 static int m_dvb_major_txrx_status;
 static int m_dvb_minor_txrx_status;
 
-static int m_dvb_running;
+static int m_dvb_threads_running;
 static int m_dvb_capture_running;
 
 static pthread_t dvb_thread[5];
@@ -50,7 +50,7 @@ void dvb_block_rx_check( void )
     tim.tv_sec  = 0;
     tim.tv_nsec = 100000000; // 100 ms
 return;
-    while((m_dvb_major_txrx_status == DVB_RECEIVING)&&m_dvb_running )
+    while((m_dvb_major_txrx_status == DVB_RECEIVING)&&m_dvb_threads_running )
     {
         nanosleep( &tim, NULL);
     }
@@ -58,7 +58,7 @@ return;
 
 int dvb_is_system_running( void )
 {
-    return m_dvb_running;
+    return m_dvb_threads_running;
 }
 
 //
@@ -71,35 +71,34 @@ void *dvb_task_capture_blocking( void *arg )
     // Parse the input stream.
     //
     // Need to know the stream type
-    if( m_cfg.capture_stream_type == DVB_PROGRAM   )
+    if( m_cfg.cap_dev_type == CAP_DEV_TYPE_SD_HAUP )
     {
         while( m_dvb_capture_running )
         {
             // Purge the capture device
-            cap_purge();
             cap_parse_hp_program_instream();
         }
         return arg;
     }
 
-    if( m_cfg.capture_stream_type == DVB_TRANSPORT )
+    if( m_cfg.cap_dev_type == CAP_DEV_TYPE_HD_HAUP )
     {
         while( m_dvb_capture_running )
         {
             // Purge the capture device
-            cap_purge();
             cap_parse_hp_transport_instream();
         }
         return arg;
     }
+
 #ifdef _USE_SW_CODECS
-    if( m_cfg.capture_stream_type == DVB_YUV )
+    if( m_cfg.cap_dev_type == CAP_DEV_TYPE_SA7134 )
     {
 
         while( m_dvb_capture_running )
         {
             // Start the analog capture processes
-            // This does not need to run
+            // This does not need to run this thread
             return arg;
         }
         return arg;
@@ -114,22 +113,21 @@ void *dvb_task_capture_blocking( void *arg )
 //
 void *dvb_task_transmit( void *arg )
 {
-    while( m_dvb_running )
+    while( m_dvb_threads_running )
     {
         hw_thread();
     }
     return arg;
 }
 //
-// Read transport packets from the UDP socket and queue them
+// Read transport packets from the UDP socket and queue them for transmission
 //
 void *udp_proc( void *arg )
 {
-    while( m_dvb_running )
+    while( m_dvb_threads_running )
     {
         uchar *tp = udp_get_transport_packet();
         if(tp != NULL) ts_write_transport_queue( tp );
-        sleep(0);
     }
     return arg;
 }
@@ -150,7 +148,7 @@ int dvb_initialise_system(void)
     dvb_config_get( &m_cfg );
 
     //if((res=init_firewire())<0)loggerf("Firewire failed %d\n",res);
-    m_dvb_running = 1;// This keeps threads running, assume it is going to work
+    m_dvb_threads_running = 1;// This keeps threads running, assume it is going to work
     m_dvb_capture_running = 1;
 
     //
@@ -159,6 +157,7 @@ int dvb_initialise_system(void)
     // Set the hw frequency and the level to zero as we are in rx at start
     // Create the Transmit sample thread
     //
+
     hw_config( m_cfg.tx_frequency, 0 );
 
     if((m_cfg.tx_hardware == HW_EXPRESS_16)||
@@ -179,7 +178,7 @@ int dvb_initialise_system(void)
     // Create the Capture thread.
     //
 
-    if( m_cfg.capture_device_type == DVB_UDP_TS )
+    if( m_cfg.cap_dev_type == CAP_DEV_TYPE_UDP )
     {
         // Create the UDP receive socket for capture
         res = pthread_create( &dvb_thread[1], NULL, udp_proc, NULL );
@@ -190,7 +189,7 @@ int dvb_initialise_system(void)
         }
     }
 
-    if( m_cfg.capture_device_type == DVB_V4L )
+    if( m_cfg.video_capture_device_class == DVB_V4L )
     {
         // Create the master thread that reads from the video capture device
         res = pthread_create( &dvb_thread[2], NULL, dvb_task_capture_blocking, NULL );
@@ -219,7 +218,7 @@ int dvb_initialise_system(void)
 //
 int dvb_start( void )
 {
-    m_dvb_running = 0;// Not running yet
+    m_dvb_threads_running = 0;// Not running yet
     m_dvb_capture_running = 0;
     m_input_device_ok  = false;
     m_output_device_ok = false;
@@ -242,7 +241,6 @@ int dvb_start( void )
     dvb_tx_frame_init();
     create_final_tx_queue();
     ts_init_transport_flow();
-    dvb_teletext_init();
     dvb_ts_if_init();
     eq_initialise();
     tp_file_logger_init();
@@ -258,20 +256,17 @@ int dvb_start( void )
 
     // Now configure the capture device
 
-    if( cfg.capture_device_type == DVB_UDP_TS )
+    if( cfg.video_capture_device_class == DVB_UDP_TS )
     {
         // Using UDP input so no capture device required
         if(udp_rx_init()==0) m_input_device_ok = true;
     }
 
-    if( cfg.capture_device_type == DVB_V4L )
+    if( cfg.video_capture_device_class == DVB_V4L )
     {
         // Using direct video input, so capture device required
         // This maybe a hardware encoder or raw video input
-        if(dvb_cap_init()==0)
-        {
-            m_input_device_ok = true;
-        }            
+        if(dvb_cap_init()==0) m_input_device_ok = true;
     }
 
     if((m_input_device_ok == true)&&( m_output_device_ok == true))
@@ -281,9 +276,9 @@ int dvb_start( void )
     }
     else
     {
-        dvb_close_capture_device();
+        if(m_input_device_ok == true) dvb_close_capture_device();
         loggerf("Running in demo mode");
-        m_dvb_running = 0;
+        m_dvb_threads_running = 0;
     }
     return(-1);
 }
@@ -295,22 +290,27 @@ void dvb_stop( void )
     struct timespec tim;
     // Terminate video capture
     m_dvb_capture_running = 0;
+
 #ifdef _USE_SW_CODECS
     // Stop the analog capture processes
     an_stop_capture();
 #endif
+
     // Wait
     tim.tv_sec  = 1;//1 sec
     tim.tv_nsec = 0;// s
     nanosleep( &tim, NULL);
-    // Terminate all other processes
-    m_dvb_running         = 0;
+
+    // Terminate all the threads
+    m_dvb_threads_running   = 0;
     dvb_t_deinit();
 
     // Close the logging file
     tp_file_logger_stop();
+
     // Close the capture device
     dvb_close_capture_device();
+
     // Close the DATV-Express hardware
     express_deinit();
 }

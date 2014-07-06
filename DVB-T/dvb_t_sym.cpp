@@ -4,6 +4,7 @@
 //
 #include <memory.h>
 #include <stdio.h>
+
 #include "dvb_gen.h"
 #include "dvb_t.h"
 #include "dvb_t_sym.h"
@@ -15,9 +16,9 @@ extern int   sptab_8k[PPS_8K_TAB_LEN];
 extern int   sttab_8k[TPS_8K_TAB_LEN];
 
 // Pilot tone BPSK
-extern double pc_stab_cont[2];
-extern double pc_stab_scat[2];
-extern double pc_stab_tps[2];
+extern FLOAT pc_stab_cont[2];
+extern FLOAT pc_stab_scat[2];
+extern FLOAT pc_stab_tps[2];
 
 extern int   m_sync_prbs[M8KS];
 
@@ -29,9 +30,9 @@ extern int   m_sync_prbs[M8KS];
 extern uchar sstd[4][SYMS_IN_FRAME];
 extern DVBTFormat m_format;
 
-fftw_complex rt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
+fft_complex rt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
 int          dt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
-fftw_complex rt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
+fft_complex rt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
 int          dt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
 
 int m_l_count;

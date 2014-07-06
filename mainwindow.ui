@@ -1686,5 +1686,21 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButtonLogText</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>631</x>
+     <y>294</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>345</x>
+     <y>181</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>

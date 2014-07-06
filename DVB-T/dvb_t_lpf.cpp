@@ -1,12 +1,11 @@
-#include "fftw.h"
-//
+#include "dvb_t.h"
 // This modules is an LPF filter used for filtering the shoulders and aliases
 // on the ouput of the DVB-T iFFT
 // It operates in place
 //
 #define FILTER_TAP_NUM 64
 
-static double filter_taps[FILTER_TAP_NUM] = {
+static FLOAT filter_taps[FILTER_TAP_NUM] = {
   -0.0000017060894794469347,
   0.000001950897520057694,
   0.000006911363047109797,
@@ -73,13 +72,13 @@ static double filter_taps[FILTER_TAP_NUM] = {
   -0.0000017060894794469347
 };
 
-fftw_complex m_mem[FILTER_TAP_NUM];
+fft_complex m_mem[FILTER_TAP_NUM];
 int m_ip;
 //
 // This operates in place and overwrites the data passed to it
 // It decimates by 2.
 //
-int dvbt_filter( fftw_complex *in, int length, fftw_complex *out )
+int dvbt_filter( fft_complex *in, int length, fft_complex *out )
 {
     int op = 0;
     for( int i = 0; i < length; i++ )

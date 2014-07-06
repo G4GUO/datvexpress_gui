@@ -103,7 +103,7 @@ void cap_rd_bytes( uchar *b, int len )
 
     while( flag )
     {
-        if(m_sysc.capture_device_type == DVB_UDP_TS)
+        if(m_sysc.video_capture_device_class == DVB_UDP_TS)
         {
             bytes=udp_read( &b[offset], req  );
         }
@@ -371,7 +371,7 @@ int cap_get_len( uchar *b )
     return len;
 }
 //
-// This parses a program stream from a Hauppauge device
+// This parses a program stream from a Hauppauge PVR device
 // and sends it as a Transport stream.
 //
 void cap_parse_hp_program_instream( void )
@@ -466,12 +466,13 @@ void cap_parse_hp_program_instream( void )
     }
 }
 //
-// Process a transport stream coming from the card.
+// Process the transport stream from a Hauppauge HD PVR.
 //
 void cap_parse_hp_transport_instream( void )
 {
     uchar b[MP_T_FRAME_LEN];
     cap_rd_bytes( b, MP_T_FRAME_LEN );
+
     if( b[0] != MP_T_SYNC )
     {
         //loggerf("No frame sync transport\n");
@@ -512,132 +513,7 @@ int cap_parse_dv_dif_instream( void )
     return 0;
 }
 */
-//
-// This gets a list of the capture devices on the system
-//
-void populate_video_capture_list( CaptureList *list )
-{
-    char text[80];
-    int fd;
-    struct v4l2_capability cap;
-    list->items = 0;
 
-    sprintf(list->item[list->items],S_NONE);
-    list->items++;
-    sprintf(list->item[list->items],S_UDP_TS);
-    list->items++;
-
-    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
-    {
-        sprintf(text,"/dev/video%d",i);
-        if((fd = open( text, O_RDWR  )) > 0 )
-        {
-            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
-            {
-                if(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)
-                {
-                    sprintf(list->item[list->items],"%s",cap.card);
-                    list->items++;
-                    //printf("%s\n",cap.driver);
-                }
-            }
-            close(fd);
-        }
-        if( list->items == MAX_CAPTURE_LIST_ITEMS ) return;
-    }
-}
-#ifdef _USE_SW_CODECS
-void populate_audio_capture_list( CaptureList *list )
-{
-    char **hints;
-    char *name;
-    char *iod;
-    list->items = 0;
-
-
-    // This should only list the input PCM devices
-    snd_device_name_hint(-1, "pcm", (void***)&hints );
-
-    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
-    {
-        if( hints[i] != NULL)
-        {
-            name = snd_device_name_get_hint(hints[i],"NAME");
-            if(strcmp("null",name) != 0)
-            {
-                iod = snd_device_name_get_hint(hints[i],"IOID");
-                if( iod == NULL)
-                {
-                    strcpy(list->item[list->items++],name);
-                }
-                else
-                {
-                    if(strcmp("Input",iod) == 0)
-                    {
-                        strcpy(list->item[list->items++],name);
-                        free(iod);
-                    }
-                }
-            }
-            free(name);
-        }
-    }
-}
-#endif
-
-//
-// Set the stream and device type from the driver
-//
-void video_capture_stream_and_device_type( const char *driver )
-{
-    sys_config info;
-    dvb_config_get( &info );
-
-    // Default
-    info.capture_stream_type = DVB_PROGRAM;
-    info.capture_device_type = DVB_V4L;
-    info.video_codec_type    = CODEC_MPEG2;
-
-    if(strncmp((const char*)driver,"pvrusb2",7) == 0)
-    {
-        info.capture_stream_type = DVB_PROGRAM;
-        info.capture_device_type = DVB_V4L;
-        info.video_codec_type    = CODEC_MPEG2;
-    }
-
-    if(strncmp((const char*)driver,"saa7134",7) == 0)
-    {
-        info.capture_stream_type = DVB_YUV;
-        info.capture_device_type = DVB_V4L;
-        info.video_codec_type    = CODEC_MPEG2;
-    }
-    if(strncmp((const char*)driver,"sonixj",10) == 0)
-    {
-        info.capture_stream_type = DVB_YUV;
-        info.capture_device_type = DVB_V4L;
-        info.video_codec_type    = CODEC_MPEG2;
-    }
-
-    if(strncmp((const char*)driver,"hdpvr",5) == 0)
-    {
-        info.capture_stream_type = DVB_TRANSPORT;
-        info.capture_device_type = DVB_V4L;
-        info.video_codec_type    = CODEC_MPEG4;
-    }
-    if(strncmp((const char*)driver,"udpts",7) == 0)
-    {
-        info.capture_stream_type = DVB_TRANSPORT;
-        info.capture_device_type = DVB_UDP_TS;
-        info.video_codec_type    = CODEC_MPEG2;
-    }
-    if(strncmp((const char*)driver,"firewire",8) == 0)
-    {
-        info.capture_stream_type = DVB_DV;
-        info.capture_device_type = DVB_FIREWIRE;
-        info.video_codec_type    = CODEC_MPEG2;
-    }
-    dvb_config_save_to_local_memory( &info );
-}
 //
 // Signals whether audio and video elemetary stream is being
 // captured.

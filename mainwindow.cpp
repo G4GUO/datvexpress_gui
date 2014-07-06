@@ -406,9 +406,13 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     ui->plainTextEditEPGText->setPlainText(cfg.event.event_text);
 
     // Video Capture device
-    int n = ui->comboBoxVideoCaptureDevice->findText(cfg.capture_device_name);
+    int n = ui->comboBoxVideoCaptureDevice->findText(cfg.video_capture_device_name);
     if( n >= 0 ) ui->comboBoxVideoCaptureDevice->setCurrentIndex(n);
-    ui->spinBoxSelectInput->setValue(cfg.capture_device_input);
+    ui->spinBoxSelectInput->setValue(cfg.video_capture_device_input);
+
+    // Audio Capture device
+    n = ui->comboBoxAudioCaptureDevice->findText(cfg.audio_capture_device_name);
+    if( n >= 0 ) ui->comboBoxAudioCaptureDevice->setCurrentIndex(n);
 
     ui->comboBoxTransmitterHWType->setCurrentIndex(cfg.tx_hardware);
 
@@ -610,6 +614,9 @@ void MainWindow::on_pushButtonApplyVideoCapture_clicked()
         dvb_set_tx_hardware_type( HW_EXPRESS_TS, S_EXPRESS_TS );
     if( str == S_EXPRESS_UDP )
         dvb_set_tx_hardware_type( HW_EXPRESS_UDP, S_EXPRESS_UDP );
+    // Audio device
+    st = ui->comboBoxAudioCaptureDevice->currentText();
+    dvb_set_audio_capture_device( st.toLatin1() );
 
     // Now get the IP address and socket number for the UDP server
     str = ui->lineEditServerIpAddress->text();
@@ -893,6 +900,14 @@ void MainWindow::on_checkBoxLogging_clicked(bool checked)
 void MainWindow::on_pushButtonLogText_clicked()
 {
     increment_display_log_index();
+    if(logger_updated())
+    {
+        m_log = logger_get_text();
+        logger_released();
+        ui->label_log_display->setText(m_log);
+
+    }
+
 //    express_insert_bytes(255);//For testing
 }
 

@@ -151,7 +151,7 @@ void pmt_fmt( void )
     dvb_config_get( &cfg );
 
 
-    if( cfg.video_codec_type == CODEC_MPEG2 )
+    if( cfg.video_codec_class == CODEC_MPEG2 )
     {
         //ISO 13818-2 Video (02)
         //ISO 13818-3 Audio (04)
@@ -159,7 +159,7 @@ void pmt_fmt( void )
         pmt_fmt( 0x02, 0x04 );
     }
 
-    if( cfg.video_codec_type == CODEC_MPEG4 )
+    if( cfg.video_codec_class == CODEC_MPEG4 )
     {
         //ISO 13818-7 Video MPEG4
         //ISO 14496-3 Audio LATM/LAOS AAC?

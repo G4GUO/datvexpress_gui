@@ -3,6 +3,7 @@
 #define DVB_H_
 
 #include <limits.h>
+#include "dvb_options.h"
 #include "express.h"
 #include "dvb_gen.h"
 #include "dvb_config.h"
@@ -14,8 +15,6 @@
 #define TMP_CSIZE 200
 
 #define DVB_FILTER_BLK_LEN (TAPS*BLOCKS)
-
-//#define _USE_SW_CODECS
 
 #define S_VERSION    "2.02"
 
@@ -118,7 +117,7 @@ int  dvb_conv_encode_frame( uchar *in, uchar *out, int len );
 // Modulators
 void dvbs_modulate_init( void );
 void dvb_s_encode_and_modulate( uchar *tp, uchar *dibit );
-void dvbt_modulate( fftw_complex *in, int length );
+void dvbt_modulate( fft_complex *in, int length );
 void dvbs2_modulate( scmplx *in, int length );
 void dvb_modulate_init(void);
 

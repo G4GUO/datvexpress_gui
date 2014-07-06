@@ -4,7 +4,7 @@
 
 extern DVBTFormat m_format;
 
-const fftw_complex c_qpsk[4] =
+const fft_complex c_qpsk[4] =
 {
     {1,  1},
     {1, -1},
@@ -12,7 +12,7 @@ const fftw_complex c_qpsk[4] =
 	{-1,-1}
 };
 
-const fftw_complex c_qam16[16] =
+const fft_complex c_qam16[16] =
 {
 	{3, 3},
 	{3, 1},
@@ -31,7 +31,7 @@ const fftw_complex c_qam16[16] =
 	{-1,-3},
 	{-1,-1}
 };
-const fftw_complex c_qam64[64] =
+const fft_complex c_qam64[64] =
 {
 	{7, 7},
 	{7, 5},
@@ -101,19 +101,19 @@ const fftw_complex c_qam64[64] =
 //
 // These are the tables used to generate the tx symbols
 //
-fftw_complex a1_qpsk[4];
-fftw_complex a1_qam16[16];
-fftw_complex a1_qam64[64];
-fftw_complex a2_qam16[16];
-fftw_complex a2_qam64[64];
-fftw_complex a4_qam16[16];
-fftw_complex a4_qam64[64];
+fft_complex a1_qpsk[4];
+fft_complex a1_qam16[16];
+fft_complex a1_qam64[64];
+fft_complex a2_qam16[16];
+fft_complex a2_qam64[64];
+fft_complex a4_qam16[16];
+fft_complex a4_qam64[64];
 //
 // Look up tables for pilot tones
 //
-double pc_stab_cont[2];
-double pc_stab_scat[2];
-double pc_stab_tps[2];
+FLOAT pc_stab_cont[2];
+FLOAT pc_stab_scat[2];
+FLOAT pc_stab_tps[2];
 
 void build_tx_sym_tabs( void )
 {
@@ -156,8 +156,8 @@ void build_tx_sym_tabs( void )
 
     for( i = 0; i < 16; i++ )
 	{
-		tr = c_qam16[i].re;
-		ti = c_qam16[i].im;
+        tr = c_qam16[i].re;
+        ti = c_qam16[i].im;
 		tr = tr > 0 ? tr+1 : tr-1;
 		ti = ti > 0 ? ti+1 : ti-1;
 
@@ -169,8 +169,8 @@ void build_tx_sym_tabs( void )
 
 	for( i = 0; i < 64; i++ )
 	{
-		tr = c_qam64[i].re;
-		ti = c_qam64[i].im;
+        tr = c_qam64[i].re;
+        ti = c_qam64[i].im;
 		tr = tr > 0 ? tr+1 : tr-1;
 		ti = ti > 0 ? ti+1 : ti-1;
 
@@ -182,8 +182,8 @@ void build_tx_sym_tabs( void )
 
 	for( i = 0; i < 16; i++ )
 	{
-		tr = c_qam16[i].re;
-		ti = c_qam16[i].im;
+        tr = c_qam16[i].re;
+        ti = c_qam16[i].im;
 		tr = tr > 0 ? tr+3 : tr-3;
 		ti = ti > 0 ? ti+3 : ti-3;
 
@@ -195,8 +195,8 @@ void build_tx_sym_tabs( void )
 
 	for( i = 0; i < 64; i++ )
 	{
-		tr = c_qam64[i].re;
-		ti = c_qam64[i].im;
+        tr = c_qam64[i].re;
+        ti = c_qam64[i].im;
 		tr = tr > 0 ? tr+3 : tr-3;
 		ti = ti > 0 ? ti+3 : ti-3;
 

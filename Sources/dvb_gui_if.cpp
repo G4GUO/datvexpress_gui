@@ -95,15 +95,44 @@ void dvb_set_service_name( const char *txt )
 void dvb_set_video_capture_device( const char *txt )
 {
     sys_config info;
-    int type = DVB_V4L;
-
-    if(strcmp(txt,S_UDP_TS)   == 0 ) type = DVB_UDP_TS;
-    if(strcmp(txt,S_FIREWIRE) == 0 ) type = DVB_FIREWIRE;
-    if(strcmp(txt,S_NONE)   == 0 )   type = DVB_NONE;
 
     dvb_config_retrieve_from_disk(&info);
-    strcpy( info.capture_device_name, txt );
-    info.capture_device_type = type;
+
+    int type = DVB_V4L;
+
+    if(strcmp(txt,S_UDP_TS)   == 0 )
+    {
+        type = DVB_UDP_TS;
+        info.cap_dev_type = CAP_DEV_TYPE_UDP;
+    }
+    if(strcmp(txt,S_FIREWIRE) == 0 )
+    {
+        type = DVB_FIREWIRE;
+        info.cap_dev_type = CAP_DEV_TYPE_FIREWIRE;
+    }
+    if(strcmp(txt,S_NONE)   == 0 )
+    {
+        type = DVB_NONE;
+        info.cap_dev_type = CAP_DEV_TYPE_NONE;
+    }
+
+    if( type == DVB_V4L )
+    {
+        info.cap_dev_type = get_device_type_from_name( txt );
+    }
+
+    strcpy( info.video_capture_device_name, txt );
+    info.video_capture_device_class = type;
+    dvb_config_save( &info );
+}
+void dvb_set_audio_capture_device( const char *txt )
+{
+    sys_config info;
+    int type = DVB_PCM;
+
+    dvb_config_retrieve_from_disk(&info);
+    strcpy( info.audio_capture_device_name, txt );
+    info.audio_capture_device_class = DVB_PCM;
     dvb_config_save( &info );
 }
 //
@@ -124,10 +153,9 @@ void dvb_set_video_capture_device_input( int input )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
-    info.capture_device_input = input;
+    info.video_capture_device_input = input;
     dvb_config_save( &info );
 }
-
 int dvb_set_dvb_mode( int mode )
 {
     sys_config info;
@@ -168,14 +196,6 @@ void dvb_set_PcrPid( u_int16_t pid )
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
     info.pcr_pid = PID_MASK(pid);
-    dvb_config_save( &info );
-    dvb_si_refresh();
-}
-void dvb_set_DataPid( u_int16_t pid )
-{
-    sys_config info;
-    dvb_config_retrieve_from_disk(&info);
-    info.ebu_data_pid = PID_MASK(pid);
     dvb_config_save( &info );
     dvb_si_refresh();
 }
@@ -248,17 +268,6 @@ void dvb_set_epg_event_text( const char *txt )
     strcpy( info.event.event_text, txt );
     dvb_config_save( &info );
     dvb_refresh_epg();
-}
-// Teletext
-void dvb_set_teletext_enabled( bool state )
-{
-    sys_config info;
-    dvb_config_retrieve_from_disk(&info);
-    if( state == true )
-        info.ebu_data_enabled = 1;
-    else
-        info.ebu_data_enabled = 0;
-    dvb_config_save( &info );
 }
 int dvb_set_s2_configuration( DVB2FrameFormat *f )
 {

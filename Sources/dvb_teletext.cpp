@@ -112,19 +112,19 @@ void dvb_teletext_init( void )
     sys_config info;
     dvb_config_get( &info );
     m_buffer = (uchar*)malloc(4096);
-    m_pid = info.ebu_data_pid;
+//    m_pid = info.ebu_data_pid;
     m_seq_count = 0;
 
     m_active = 0;
 
-    if( info.ebu_data_enabled )
+//    if( info.ebu_data_enabled )
     {
-        if((fp=(fopen(info.ebu_teletext_file_name,"r"))))
+//        if((fp=(fopen(info.ebu_teletext_file_name,"r"))))
         {
             m_buffer_length = fread(m_buffer,4096,1,fp);
             m_active = 1;
         }
-        else
+//        else
         {
             //std::cout << boost::format("Cannot open Teletext File : %s") % info.ebu_teletext_file_name << std::endl;
         }

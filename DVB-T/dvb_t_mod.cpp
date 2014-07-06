@@ -4,39 +4,37 @@
 // It takes the pre-built reference symbols
 // add the unknown data, calls the FFT
 // attaches the guard samples and sends
-// the result to the USRP2
+// the result to the transmitter
 //
 #include <stdio.h>
 #include <memory.h>
 #include "dvb_t.h"
 #include "dvb.h"
-#include "fftw.h"
-
 
 // External 
 extern DVBTFormat m_format;
 
 // Constellation tables
-extern fftw_complex a1_qpsk[4];
-extern fftw_complex a1_qam16[16];
-extern fftw_complex a1_qam64[64];
-extern fftw_complex a2_qam16[16];
-extern fftw_complex a2_qam64[64];
-extern fftw_complex a4_qam16[16];
-extern fftw_complex a4_qam64[64];
+extern fft_complex a1_qpsk[4];
+extern fft_complex a1_qam16[16];
+extern fft_complex a1_qam64[64];
+extern fft_complex a2_qam16[16];
+extern fft_complex a2_qam64[64];
+extern fft_complex a4_qam16[16];
+extern fft_complex a4_qam64[64];
 
-extern fftw_complex rt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
+extern fft_complex rt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
 extern int    dt_2k[SYMS_IN_FRAME*SF_NR][M2KS];
-extern fftw_complex rt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
+extern fft_complex rt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
 extern int    dt_8k[SYMS_IN_FRAME*SF_NR][M8KS];
 
 // Local
 
 // Where it is all at, choose the largest size.
-static fftw_complex m_tx_in_frame[M8KS];
+static fft_complex m_tx_in_frame[M8KS];
 
 // Table used to map binary onto constellation
-const fftw_complex *m_co_tab;
+const fft_complex *m_co_tab;
 
 // Number of guard symbols
 int m_guard;
@@ -121,9 +119,9 @@ void dvb_t_select_constellation_table( void )
     }
 }
 // Compensate for the filter response
-void dvb_t_2k_compensation( fftw_complex *s )
+void dvb_t_2k_compensation( fft_complex *s )
 {
-   fftw_complex *f,*l;
+   fft_complex *f,*l;
    float div;
     f = &s[M2KSTART];
     l = &s[M2KSTART+K2MAX-1];
@@ -151,7 +149,7 @@ void dvb_t_2k_compensation( fftw_complex *s )
 void dvb_t_modulate( uchar *syms )
 {
     int i,r;
-    fftw_complex *fm;
+    fft_complex *fm;
 
     r = reference_symbol_seq_update();
 
@@ -159,7 +157,7 @@ void dvb_t_modulate( uchar *syms )
     {
         fm = &m_tx_in_frame[M2KSTART];
         // Add the reference tones
-        memcpy( fm, rt_2k[r], sizeof(fftw_complex)*(K2MAX+1));
+        memcpy( fm, rt_2k[r], sizeof(fft_complex)*(K2MAX+1));
         // add the data tsymbols
         for( i = 0; i < M2SI; i++ ) fm[dt_2k[r][i]] = m_co_tab[syms[i]];
 //        dvb_t_2k_compensation( m_tx_in_frame );
@@ -171,7 +169,7 @@ void dvb_t_modulate( uchar *syms )
     {
         fm = &m_tx_in_frame[M8KSTART];
         // Add the reference tones
-        memcpy( fm, rt_8k[r], sizeof(fftw_complex)*(K8MAX+1));
+        memcpy( fm, rt_8k[r], sizeof(fft_complex)*(K8MAX+1));
         // add the data symbols
         for( i = 0; i < M8SI; i++ ) fm[dt_8k[r][i]] = m_co_tab[syms[i]];
         dvbt_fft_modulate( m_tx_in_frame, m_guard );

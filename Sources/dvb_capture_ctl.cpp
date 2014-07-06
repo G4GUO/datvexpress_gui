@@ -240,12 +240,10 @@ int open_named_capture_device( const char *name )
 
     if(strcmp(name,"UDP") == 0 )
     {
-        video_capture_stream_and_device_type( "udpts" );
         return 0;
     }
     if(strcmp(name,"FIREWIRE") == 0 )
     {
-        video_capture_stream_and_device_type( "firewire" );
         return 0;
     }
     // Must be a /dev/video device
@@ -260,7 +258,6 @@ int open_named_capture_device( const char *name )
                 {
                     // Device found
                     m_i_fd = fd;
-                    video_capture_stream_and_device_type( (const char*)cap.driver );
                     return fd;
                 }
             }
@@ -270,6 +267,155 @@ int open_named_capture_device( const char *name )
     // We have not found a valid device
     return -1;
 }
+//
+// Get the device type from the driver
+//
+CapDevType get_video_device_type_from_driver( const char *driver )
+{
+    CapDevType type = CAP_DEV_TYPE_NONE;
+
+    if(strncmp((const char*)driver,"pvrusb2",7) == 0)
+    {
+        type = CAP_DEV_TYPE_SD_HAUP;
+    }
+
+    if(strncmp((const char*)driver,"ivtv",7) == 0)
+    {
+        type = CAP_DEV_TYPE_SD_HAUP;
+    }
+
+    if(strncmp((const char*)driver,"saa7134",7) == 0)
+    {
+        type = CAP_DEV_TYPE_SA7134;
+    }
+    if(strncmp((const char*)driver,"sonixj",10) == 0)
+    {
+        type = CAP_DEV_TYPE_NONE;
+    }
+
+    if(strncmp((const char*)driver,"hdpvr",5) == 0)
+    {
+        type = CAP_DEV_TYPE_HD_HAUP;
+    }
+    if(strncmp((const char*)driver,"udpts",7) == 0)
+    {
+        type = CAP_DEV_TYPE_UDP;
+    }
+    if(strncmp((const char*)driver,"firewire",8) == 0)
+    {
+        type = CAP_DEV_TYPE_FIREWIRE;
+    }
+    return type;
+}
+
+CapDevType get_device_type_from_name( const char *name )
+{
+    int fd;
+    CapDevType type;
+    struct v4l2_capability cap;
+    char devname[40];
+
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        sprintf(devname,"/dev/video%d",i);
+        if((fd = open( devname, O_RDWR )) > 0 )
+        {
+            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
+            {
+                if(strcmp(name,(const char*)cap.card) == 0)
+                {
+                    // Device found
+                    type = get_video_device_type_from_driver( (const char*)cap.driver );
+                    close(fd);
+                    return type;
+                }
+            }
+            close(fd);
+        }
+    }
+    // We have not found a valid device
+    return CAP_DEV_TYPE_NONE;
+}
+//
+// This gets a list of the capture devices on the system
+//
+void populate_video_capture_list( CaptureList *list )
+{
+    char text[80];
+    int fd;
+    struct v4l2_capability cap;
+    int items_left;
+    list->items = 0;
+
+    sprintf(list->item[list->items],S_NONE);
+    list->items++;
+    sprintf(list->item[list->items],S_UDP_TS);
+    list->items++;
+    sprintf(list->item[list->items],S_FIREWIRE);
+    list->items++;
+
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        sprintf(text,"/dev/video%d",i);
+        if((fd = open( text, O_RDWR  )) > 0 )
+        {
+            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
+            {
+                if(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)
+                {
+                    sprintf(list->item[list->items],"%s",cap.card);
+                    list->items++;
+                    //printf("%s\n",cap.driver);
+                }
+            }
+            close(fd);
+        }
+        if(list->items >= MAX_CAPTURE_LIST_ITEMS ) return;
+    }
+}
+
+#ifdef _USE_SW_CODECS
+void populate_audio_capture_list( CaptureList *list )
+{
+    void **hints;
+    char *name;
+    char *iod;
+    char *desc;
+    list->items = 0;
+    hints = NULL;
+
+    snd_config_update();
+
+    // This should only list the input PCM devices
+    snd_device_name_hint(-1, "pcm", &hints );
+
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        if( hints[i] )
+        {
+            name = snd_device_name_get_hint(hints[i],"NAME");
+           // desc = snd_device_name_get_hint(hints[i],"DESC");
+            if(strcmp("null",name) != 0)
+            {
+                iod = snd_device_name_get_hint(hints[i],"IOID");
+                if( iod == NULL)
+                {
+                   strcpy(list->item[list->items++],name);
+                }
+                else
+                {
+                    if(strcmp("Input",iod) == 0)
+                    {
+                        strcpy(list->item[list->items++],iod);
+                    }
+                    free(iod);
+                }
+            }
+            free(name);
+        }
+    }
+}
+#endif
 
 //
 // Program or re-program the capture device
@@ -303,7 +449,7 @@ void dvb_cap_ctl( void )
 //            if( cap.capabilities & V4L2_CAP_READWRITE) loggerf("R/W supported");
     }
 
-    if( info.capture_device_type == DVB_FIREWIRE  )
+    if( info.video_capture_device_class == DVB_FIREWIRE  )
     {
         // Set up the transcoder
         //transcoder.ConfigureOutput( info.video_bitrate, 64000, 720, 576 );
@@ -315,7 +461,7 @@ void dvb_cap_ctl( void )
 // PVR XXX
 /////////////////////////////
 
-    if((info.capture_device_type == DVB_V4L)&&(info.capture_stream_type  == DVB_PROGRAM) )
+    if( info.cap_dev_type == CAP_DEV_TYPE_SD_HAUP )
     {
 
 //        dvb_pvrxxx_set_analog_standard( fd, V4L2_STD_PAL_BG );
@@ -412,7 +558,7 @@ void dvb_cap_ctl( void )
 // v4l2-ctl --set-input=2				#Composite input for PVR-150 = 2
 
 //	input = V4L2_INPUT_TYPE_CAMERA;
-        input = info.capture_device_input;
+        input = info.video_capture_device_input;
 
         if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
         {
@@ -426,13 +572,13 @@ void dvb_cap_ctl( void )
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
         fmt.fmt.pix.width       = 720;
 
-        if(info.cap_format.video_format == CAP_720X576X25 )
+        if(info.cap_format.video_format == CAP_PAL )
         {
             fmt.fmt.pix.height = 576;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
         }
-        if(info.cap_format.video_format == CAP_720X480X30 )
+        if(info.cap_format.video_format == CAP_NTSC )
         {
             fmt.fmt.pix.height = 480;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
@@ -440,6 +586,7 @@ void dvb_cap_ctl( void )
         }
 
         info.video_bitrate = video_bitrate;
+        info.video_codec_class = CODEC_MPEG2;
         dvb_config_save_and_update( &info );
     }
 
@@ -447,7 +594,7 @@ void dvb_cap_ctl( void )
 // HD PVR
 ///////////////////
 
-    if((info.capture_device_type == DVB_V4L)&&(info.capture_stream_type  == DVB_TRANSPORT))
+    if( info.cap_dev_type == CAP_DEV_TYPE_HD_HAUP )
     {
         v4l2_ext_controls ec;
         v4l2_ext_control  ct[6];
@@ -504,16 +651,17 @@ void dvb_cap_ctl( void )
         memset( &input,0,sizeof( input ));
          // 0 = component, 1 = S-Video, 2 = Composite
 
-        input = info.capture_device_input;
+        input = info.video_capture_device_input;
         if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
         {
             logger("CAP Error VIDIOC_S_INPUT");
         }
         info.video_bitrate = video_bitrate;
+        info.video_codec_class = CODEC_MPEG4;
         dvb_config_save_and_update( &info );
     }
 
-    if( info.capture_device_type == DVB_UDP_TS )
+    if( info.video_capture_device_class == DVB_UDP_TS )
     {
        // Do nothing
         info.video_bitrate = video_bitrate;
@@ -525,10 +673,11 @@ void dvb_cap_ctl( void )
 ///////////////////
 #ifdef _USE_SW_CODECS
 
-    if((info.capture_device_type == DVB_V4L)&&(info.capture_stream_type  == DVB_YUV))
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
     {
         an_configure_capture_card();
         info.video_bitrate = calculate_video_bitrate();
+        info.video_codec_class = CODEC_MPEG2;
         dvb_config_save_and_update( &info );
     }
 #endif
@@ -562,7 +711,7 @@ int dvb_open_capture_device(void)
     sys_config info;
     dvb_config_get( &info );
 
-    if( open_named_capture_device( info.capture_device_name ) < 0 )
+    if( open_named_capture_device( info.video_capture_device_name ) < 0 )
     {
         loggerf("Video Capture device open failed");
         return -1;
@@ -578,16 +727,18 @@ void dvb_close_capture_device(void)
     dvb_config_get( &info );
 
     // No need to close the device if it is a UDP connection
-    if(info.capture_device_type == DVB_UDP_TS)
+    if(info.video_capture_device_class == DVB_UDP_TS)
         return;
 
     if( m_i_fd > 0 )
     {
        close( m_i_fd );
     }
+
 #ifdef _USE_SW_CODECS
-    if(info.capture_device_type == DVB_YUV )
+    if(info.video_capture_device_class == DVB_YUV )
         snd_pcm_close(m_audio_handle);
+    an_stop_capture();
 #endif
     m_i_fd = 0;
 }

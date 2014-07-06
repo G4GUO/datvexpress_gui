@@ -28,7 +28,7 @@ const char *logger_get_text( void )
     char *msg[2];
     msg[0] = m_log_text[(m_write_log_index+MAX_LOGS-1)%MAX_LOGS];
     msg[1] = m_log_text[(m_display_log_index+MAX_LOGS-1)%MAX_LOGS];
-    sprintf(m_display_box_text,"%s\n%s",msg[0],msg[1]);
+    sprintf(m_display_box_text,"%s (latest)\n%s",msg[0],msg[1]);
     m_log_updated = 0;
     return m_display_box_text;
 }
@@ -67,16 +67,13 @@ void loggerf( const char *fmt, ... )
 }
 void increment_display_log_index(void)
 {
-    int index;
-    for( int i = 0; i < MAX_LOGS; i++ )
+    int index = (m_display_log_index + 1)%MAX_LOGS;
+
+    if(strlen(m_log_text[index]) > 0 )
     {
-        index = (m_display_log_index + 1)%MAX_LOGS;
-        if(strlen(m_log_text[index]) > 0 )
-            return;
-        else
-            m_display_log_index = index;
+        m_display_log_index = index;
+        m_log_updated = 1;
     }
-    m_log_updated = 1;
 }
 void display_logger_init( void )
 {

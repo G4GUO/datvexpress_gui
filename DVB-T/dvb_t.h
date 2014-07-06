@@ -1,15 +1,32 @@
 #ifndef __DVB_T_H__
 #define __DVB_T_H__
 
+#include "dvb_options.h"
+
+#ifdef USE_AVFFT
+
+#define __STDC_CONSTANT_MACROS
+
+extern "C" {
+#include <libavutil/avutil.h>
+#include <libavcodec/avfft.h>
+}
+#else
 #include "fftw.h"
+#endif
+
 #include "Sources/dvb_types.h"
 #include "Sources/dvb_gen.h"
 
-// Uncommenting this causes FFT's 2x the normal size to be used
-// this removes aliases in the transmission but requires a much
-// higher performance PC.
-
 #define SYMS_IN_FRAME 68
+
+#ifdef USE_AVFFT
+#define fft_complex FFTComplex
+#define FLOAT float
+#else
+#define fft_complex fftw_complex
+#define FLOAT double
+#endif
 
 // Minimum cell nr
 #define K2MIN 0
@@ -92,6 +109,7 @@ typedef struct{
 //#define AVG_E2 (1.0/1704.0)
 #define AVG_E2 (1.0/150.0)
 
+
 // Prototypes
 
 // dvb_t_tp.c
@@ -124,8 +142,8 @@ void dvb_t_modulate_init( void );
 // dvb_t_linux_fft.c
 void init_dvb_t_fft( void );
 void deinit_dvb_t_fft( void );
-void fft_2k_test( fftw_complex *out );
-void dvbt_fft_modulate( fftw_complex *in, int guard );
+void fft_2k_test( fft_complex *out );
+void dvbt_fft_modulate( fft_complex *in, int guard );
 
 // dvb_t.cpp
 void   dvb_t_init( void );
@@ -141,6 +159,6 @@ void build_tx_sym_tabs( void );
 int dvb_t_raw_bitrate(void);
 
 // dvb_t_lpf.cpp
-int dvbt_filter( fftw_complex *in, int length, fftw_complex *out );
+int dvbt_filter( fft_complex *in, int length, fft_complex *out );
 
 #endif

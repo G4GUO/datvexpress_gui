@@ -19,7 +19,8 @@ HEADERS  += mainwindow.h \
     Sources/mp_desc.h \
     Sources/mp_config.h \
     DVB-T/dvb_t_sym.h \
-    capturedialog.h
+    capturedialog.h \
+    Sources/dvb_options.h
 
 FORMS    += mainwindow.ui \
             Capturedialog.ui
@@ -27,12 +28,12 @@ FORMS    += mainwindow.ui \
 unix{
     CONFIG    += link_pkgconfig
     PKGCONFIG += libusb-1.0
-#    PKGCONFIG += libavutil
+    PKGCONFIG += libavutil
 }
 
-LIBS += -lfftw
-#LIBS += -lavformat -lavcodec -lavutil -lswresample -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2 -lpthread
-#LIBS += -lasound
+LIBS += -lfftw -lpthread
+LIBS += -lavdevice -lavresample -lavformat -lavcodec -lavutil -lswresample -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2
+LIBS += -lasound
 
 INCLUDEPATH += Sources
 

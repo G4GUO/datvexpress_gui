@@ -43,16 +43,16 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QRadioButton" name="radioButton720x576">
+     <widget class="QRadioButton" name="radioButtonPal720x576">
       <property name="text">
-       <string>720 x 576 x 25 fps</string>
+       <string>PAL 720 x 576 x 25 fps</string>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QRadioButton" name="radioButton720x480">
+     <widget class="QRadioButton" name="radioButtonNtsc720x480">
       <property name="text">
-       <string>720 x 480 x 30 fps</string>
+       <string>NTSC 720 x 480 x 30 fps</string>
       </property>
      </widget>
     </item>

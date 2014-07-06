@@ -20,6 +20,7 @@ void dvb_set_tx_lvl( float lvl );
 void dvb_set_service_provider_name( const char *txt );
 void dvb_set_service_name( const char *txt );
 void dvb_set_video_capture_device( const char *txt );
+void dvb_set_audio_capture_device( const char *txt );
 int  dvb_set_dvb_mode( int mode );
 void dvb_set_PmtPid( u_int16_t pid );
 void dvb_set_VideoPid( u_int16_t pid );

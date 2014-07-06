@@ -78,8 +78,8 @@
 #define FPGA_SR_REG       10
 
 // Iteration rates
-#define SR_THRESHOLD_HZ       120000000
-#define SR_THRESHOLD_SI570_HZ 120000000
+#define SR_THRESHOLD_HZ       100000000
+#define SR_THRESHOLD_SI570_HZ 100000000
 
 // Threshold we need to switch to 8 bit mode
 //#define BIT_MODE_THRESHOLD 320000000

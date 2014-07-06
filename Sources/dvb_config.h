@@ -4,6 +4,7 @@
 #ifndef DVB_CONFIG_H
 #define DVB_CONFIG_H
 
+#include <stdlib.h>
 #include "DVB-T/dvb_t.h"
 #include "DVB-S2/DVBS2.h"
 
@@ -24,19 +25,37 @@ typedef struct{
     char item[MAX_CAPTURE_LIST_ITEMS][80];
 }CaptureList;
 
+typedef enum{
+    CAP_DEV_TYPE_NONE,
+    CAP_DEV_TYPE_UDP,
+    CAP_DEV_TYPE_FIREWIRE,
+    CAP_DEV_TYPE_SD_HAUP,
+    CAP_DEV_TYPE_HD_HAUP,
+    CAP_DEV_TYPE_SA7134
+}CapDevType;
+
 // Capture device configuration
-typedef enum{CAP_AUTO, CAP_720X576X25, CAP_720X480X30 }CapVideoFormat;
+typedef enum{CAP_AUTO, CAP_PAL, CAP_NTSC }CapVideoFormat;
 
 typedef struct{
     CapVideoFormat video_format;
 }CaptureFormat;
 
+// Codec information for S/W codecs
+typedef struct{
+    u_int32_t audio_sample_rate;
+    u_int32_t audio_bit_rate;
+    u_int32_t audio_encoder_type;
+    u_int32_t video_capture_format;
+    u_int32_t video_encoder_type;
+}CodecInfo;
+
 #define N_SR_MEMS 12
 
-enum{ MODE_DVBS=0, MODE_DVBS2=1, MODE_DVBC = 2, MODE_DVBT=3, MODE_DVBT2=4, MODE_UDP=5 };
+enum{ MODE_DVBS   = 0, MODE_DVBS2=1, MODE_DVBC = 2, MODE_DVBT=3, MODE_DVBT2=4, MODE_UDP=5 };
 enum{ FEC_RATE_12 = 0, FEC_RATE_23 = 1, FEC_RATE_34 = 2, FEC_RATE_56 = 3, FEC_RATE_78 = 4};
-enum{ DVB_PROGRAM = 0, DVB_TRANSPORT = 1, DVB_DV = 2, DVB_YUV = 3};
-enum{ DVB_V4L = 0, DVB_UDP_TS = 2, DVB_FIREWIRE = 3, DVB_NONE = 4 };
+enum{ DVB_PROGRAM = 0, DVB_TRANSPORT = 1, DVB_DV = 2, DVB_YUV = 3, DVB_PCM = 4};
+enum{ DVB_V4L     = 0, DVB_UDP_TS = 2, DVB_FIREWIRE = 3, DVB_NONE = 4 };
 enum{ CODEC_MPEG2 = 0, CODEC_MPEG4 = 1 };
 enum{ HW_EXPRESS_AUTO = 0, HW_EXPRESS_16 = 1, HW_EXPRESS_8 = 2, HW_EXPRESS_TS = 3, HW_EXPRESS_UDP = 4 };
 enum{ SAMPLEMODE_8_BITS = 0, SAMPLEMODE_16_BITS = 1 };
@@ -49,6 +68,7 @@ typedef struct {
     DVBTFormat      dvbt_fmt;
     DVB2FrameFormat dvbs2_fmt;
     CaptureFormat   cap_format;
+    CapDevType      cap_dev_type;
     int    sr_mem_nr;
     int    sr_mem[N_SR_MEMS];
     double tx_frequency;
@@ -62,15 +82,12 @@ typedef struct {
     u_int16_t stream_id;
     u_int16_t service_id;
     u_int16_t program_nr;
-    int  ebu_data_enabled;
-    int  ebu_data_pid;
-    int  capture_stream_type;
-    int  capture_device_type;
-    int  capture_device_input;
-    int  video_codec_type;
-    char ebu_teletext_file_name[2048];
-    char capture_device_name[256];
-    char capture_device_type_name[256];
+    int  video_capture_device_class;
+    int  video_capture_device_input;
+    int  video_codec_class;
+    int  audio_capture_device_class;
+    char video_capture_device_name[256];
+    char audio_capture_device_name[256];
     char service_provider_name[256];
     char service_name[256];
     epg_event event;
