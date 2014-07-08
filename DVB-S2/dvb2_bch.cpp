@@ -121,7 +121,7 @@ void DVB2::poly_reverse( int *pin, int *pout, int len )
 //
 // Shift a 128 bit register
 //
-void  DVB2::reg_4_shift( u32 *sr )
+void  inline DVB2::reg_4_shift( u32 *sr )
 {
     sr[3] = (sr[3]>>1) | (sr[2]<<31);
     sr[2] = (sr[2]>>1) | (sr[1]<<31);
@@ -131,7 +131,7 @@ void  DVB2::reg_4_shift( u32 *sr )
 //
 // Shift 160 bits
 //
-void  DVB2::reg_5_shift( u32 *sr )
+void  inline DVB2::reg_5_shift( u32 *sr )
 {
     sr[4] = (sr[4]>>1) | (sr[3]<<31);
     sr[3] = (sr[3]>>1) | (sr[2]<<31);
@@ -142,7 +142,7 @@ void  DVB2::reg_5_shift( u32 *sr )
 //
 // Shift 192 bits
 //
-void  DVB2::reg_6_shift( u32 *sr )
+void  inline DVB2::reg_6_shift( u32 *sr )
 {
     sr[5] = (sr[5]>>1) | (sr[4]<<31);
     sr[4] = (sr[4]>>1) | (sr[3]<<31);
@@ -196,7 +196,7 @@ Bit DVB2::bch_n_10_encode( Bit *in,int len )
 
     for( i = 0; i < len; i++ )
     {
-        b = (in[i]^((shift[4]&1)?1:0));
+        b = in[i]^(shift[4]&1);
         reg_5_shift( shift );
         if(b)
         {
@@ -210,7 +210,7 @@ Bit DVB2::bch_n_10_encode( Bit *in,int len )
     // Now add the parity bits to the output
     for( int n = 0; n < 160; n++ )
     {
-        in[i++] = (shift[4]&1)?1:0;
+        in[i++] = shift[4]&1;
         reg_5_shift( shift );
     }
     return i;
@@ -226,7 +226,7 @@ Bit DVB2::bch_n_12_encode( Bit *in, int len )
     // MSB of the codeword first
     for( i = 0; i < len; i++ )
     {
-        b =  (in[i] ^ ((shift[5]&1)?1:0));
+        b =  in[i] ^ (shift[5]&1);
         reg_6_shift( shift );
         if(b)
         {
@@ -241,7 +241,7 @@ Bit DVB2::bch_n_12_encode( Bit *in, int len )
     // Now add the parity bits to the output
     for( int n = 0; n < 192; n++ )
     {
-        in[i++] = (shift[5]&1)?1:0;
+        in[i++] = shift[5]&1;
         reg_6_shift( shift );
     }
     return i;
