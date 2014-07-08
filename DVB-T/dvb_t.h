@@ -10,6 +10,7 @@
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavcodec/avfft.h>
+#include <libavutil/mem.h>
 }
 #else
 #include "fftw.h"
