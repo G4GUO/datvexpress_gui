@@ -26,8 +26,8 @@ void logger_released( void )
 const char *logger_get_text( void )
 {
     char *msg[2];
-    msg[0] = m_log_text[(m_write_log_index+MAX_LOGS-1)%MAX_LOGS];
-    msg[1] = m_log_text[(m_display_log_index+MAX_LOGS-1)%MAX_LOGS];
+    msg[0] = m_log_text[m_write_log_index];
+    msg[1] = m_log_text[m_display_log_index];
     sprintf(m_display_box_text,"%s (latest)\n%s",msg[0],msg[1]);
     m_log_updated = 0;
     return m_display_box_text;
@@ -39,9 +39,9 @@ void logger( char const *text )
     time_t now = time (0);
     strftime (buff, 1000, "%Y-%m-%d %H:%M:%S ", localtime (&now));
     strcat( buff, text );
-    strncpy( m_log_text[m_write_log_index],buff,MAX_LOG_LEN );
     m_display_log_index = m_write_log_index;
     m_write_log_index = (m_write_log_index + 1)%MAX_LOGS;
+    strncpy( m_log_text[m_write_log_index],buff,MAX_LOG_LEN );
     m_log_updated = 1;
 }
 void loggerf( char *fmt, ... )
@@ -67,12 +67,15 @@ void loggerf( const char *fmt, ... )
 }
 void increment_display_log_index(void)
 {
-    int index = (m_display_log_index + 1)%MAX_LOGS;
-
-    if(strlen(m_log_text[index]) > 0 )
+    for( int i = 0; i < MAX_LOGS; i++ )
     {
-        m_display_log_index = index;
-        m_log_updated = 1;
+        m_display_log_index = (m_display_log_index + MAX_LOGS - 1)%MAX_LOGS;
+
+        if(strlen(m_log_text[m_display_log_index]) > 0 )
+        {
+            m_log_updated = 1;
+            return;
+        }
     }
 }
 void display_logger_init( void )
