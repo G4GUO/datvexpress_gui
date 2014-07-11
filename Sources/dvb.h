@@ -144,6 +144,7 @@ void dvb_ts_if( uchar *b );
 int     final_tx_queue_size( void );
 int     final_tx_queue_percentage_unprotected( void );
 void    write_final_tx_queue( scmplx *samples, int length );
+void    write_final_tx_queue( fft_complex *samples, int length );
 void    write_final_tx_queue_ts( uchar* tp );
 void    write_final_tx_queue_udp( uchar* tp );
 dvb_buffer *read_final_tx_queue(void);

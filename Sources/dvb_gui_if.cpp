@@ -149,11 +149,12 @@ void dvb_set_tx_hardware_type( int type, const char *name )
 //
 // Input port to use on video device
 //
-void dvb_set_video_capture_device_input( int input )
+void dvb_set_video_capture_device_input( int input, const char *name )
 {
     sys_config info;
     dvb_config_retrieve_from_disk(&info);
     info.video_capture_device_input = input;
+    strcpy(info.video_capture_input_name, name );
     dvb_config_save( &info );
 }
 int dvb_set_dvb_mode( int mode )

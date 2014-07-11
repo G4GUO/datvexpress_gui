@@ -23,7 +23,12 @@ typedef struct{
 typedef struct{
     int items;
     char item[MAX_CAPTURE_LIST_ITEMS][80];
-}CaptureList;
+}CaptureCardList;
+
+typedef struct{
+    int items;
+    char item[MAX_CAPTURE_LIST_ITEMS][80];
+}CaptureInputList;
 
 typedef enum{
     CAP_DEV_TYPE_NONE,
@@ -87,11 +92,13 @@ typedef struct {
     int  video_codec_class;
     int  audio_capture_device_class;
     char video_capture_device_name[256];
+    char video_capture_input_name[256];
     char audio_capture_device_name[256];
     char service_provider_name[256];
     char service_name[256];
     epg_event event;
     int video_bitrate;
+    int audio_bitrate;
     int tx_hardware;
     char tx_hardware_type_name[256];
     char server_ip_address[256];

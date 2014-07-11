@@ -337,14 +337,42 @@ CapDevType get_device_type_from_name( const char *name )
     return CAP_DEV_TYPE_NONE;
 }
 //
+// Given a name get the file handle for that device
+//
+int get_device_id_from_name( const char *name )
+{
+    int fd;
+    CapDevType type;
+    struct v4l2_capability cap;
+    char devname[40];
+
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        sprintf(devname,"/dev/video%d",i);
+        if((fd = open( devname, O_RDWR )) > 0 )
+        {
+            if( ioctl(fd,VIDIOC_QUERYCAP, &cap) >= 0 )
+            {
+                if(strcmp(name,(const char*)cap.card) == 0)
+                {
+                    // Device found
+                    return fd;
+                }
+            }
+            close(fd);
+        }
+    }
+    // We have not found a valid device
+    return -1;
+}
+//
 // This gets a list of the capture devices on the system
 //
-void populate_video_capture_list( CaptureList *list )
+void populate_video_capture_list( CaptureCardList *list )
 {
     char text[80];
     int fd;
     struct v4l2_capability cap;
-    int items_left;
     list->items = 0;
 
     sprintf(list->item[list->items],S_NONE);
@@ -373,14 +401,55 @@ void populate_video_capture_list( CaptureList *list )
         if(list->items >= MAX_CAPTURE_LIST_ITEMS ) return;
     }
 }
+//
+// Given a file id get the list of input names
+//
+void populate_video_input_list( int fd, CaptureInputList *list )
+{
+    struct v4l2_input input;
+    list->items = 0;
+
+    for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
+    {
+        input.index = i;
+        if( ioctl(fd, VIDIOC_ENUMINPUT, &input) >= 0 )
+        {
+            sprintf(list->item[list->items],"%s",input.name);
+            list->items++;
+        }
+    }
+}
+//
+// Get the input names for the currently open device
+//
+void populate_video_input_list_from_open_fd( CaptureInputList *list )
+{
+    list->items = 0;
+    populate_video_input_list( m_i_fd, list );
+}
+//
+// Given a name get the list of input names
+//
+int populate_video_input_list( const char *name, CaptureInputList *list )
+{
+    int fd;
+    list->items = 0;
+    if((fd=get_device_id_from_name( name ))>0)
+    {
+        populate_video_input_list( fd, list );
+        close(fd);
+        return 0;
+    }
+    return -1;
+}
 
 #ifdef _USE_SW_CODECS
-void populate_audio_capture_list( CaptureList *list )
+void populate_audio_capture_list( CaptureCardList *list )
 {
     void **hints;
     char *name;
     char *iod;
-    char *desc;
+//    char *desc;
     list->items = 0;
     hints = NULL;
 
@@ -586,6 +655,7 @@ void dvb_cap_ctl( void )
         }
 
         info.video_bitrate = video_bitrate;
+        info.audio_bitrate = 192000;
         info.video_codec_class = CODEC_MPEG2;
         dvb_config_save_and_update( &info );
     }
@@ -657,6 +727,7 @@ void dvb_cap_ctl( void )
             logger("CAP Error VIDIOC_S_INPUT");
         }
         info.video_bitrate = video_bitrate;
+        info.audio_bitrate = 192000;
         info.video_codec_class = CODEC_MPEG4;
         dvb_config_save_and_update( &info );
     }
@@ -665,6 +736,7 @@ void dvb_cap_ctl( void )
     {
        // Do nothing
         info.video_bitrate = video_bitrate;
+        info.audio_bitrate = 192000;
         dvb_config_save_and_update( &info );
     }
 
@@ -675,10 +747,11 @@ void dvb_cap_ctl( void )
 
     if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
     {
-        an_configure_capture_card();
-        info.video_bitrate = calculate_video_bitrate();
+        info.video_bitrate     = calculate_video_bitrate();
+        info.audio_bitrate     = 192000;
         info.video_codec_class = CODEC_MPEG2;
         dvb_config_save_and_update( &info );
+        an_configure_capture_card();
     }
 #endif
 

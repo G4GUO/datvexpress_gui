@@ -357,8 +357,11 @@ void an_start_streaming_capture(int fd)
 //
 int an_init_codecs( void )
 {
+    sys_config info;
+
     av_register_all();
     avfilter_register_all();
+    dvb_config_get( &info );
 
     av_init_packet(&m_avpkt[ENVC]);
 
@@ -374,8 +377,8 @@ int an_init_codecs( void )
     if(codec != NULL)
     {
         m_pC[ENVC]                     = avcodec_alloc_context3(codec);
-        m_pC[ENVC]->bit_rate           = calculate_video_bitrate();
-        m_pC[ENVC]->bit_rate_tolerance = calculate_video_bitrate()/10;
+        m_pC[ENVC]->bit_rate           = info.video_bitrate;
+        m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;
         m_pC[ENVC]->width              = m_width;
         m_pC[ENVC]->height             = m_height;
         m_pC[ENVC]->gop_size           = 12;
@@ -411,7 +414,7 @@ int an_init_codecs( void )
     if( codec != NULL )
     {
         m_pC[ENAC] = avcodec_alloc_context3(codec);
-        m_pC[ENAC]->bit_rate            = 192000;
+        m_pC[ENAC]->bit_rate            = info.audio_bitrate;
         m_pC[ENAC]->bit_rate_tolerance  = 0;
         m_pC[ENAC]->bits_per_raw_sample = 16;
         m_pC[ENAC]->sample_rate         = 48000;

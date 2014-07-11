@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include "memory.h"
 #include "dvb.h"
 
@@ -41,7 +41,7 @@ uchar gpoly[RS_LEN]={59,36,50,98,229,41,65,163,8,30,209,68,189,104,13,59};
 #endif
 
 uchar gf[G_SIZE];
-uchar gmult_tab[G_SIZE][G_SIZE];
+uchar gmult_tab[G_SIZE][RS_LEN];
 uchar l_shift[RS_LEN];
 
 inline uchar gmult(uchar a, uchar b)
@@ -69,13 +69,13 @@ inline uchar gmult(uchar a, uchar b)
 //
 void build_gf_mult_tab( void )
 {
-    int i,j;
+    int a,b;
 
-    for( i = 0; i < G_SIZE; i++ )
+    for( a = 0; a < G_SIZE; a++ )
     {
-        for( j = 0; j < G_SIZE; j++ )
+        for( b = 0; b < RS_LEN; b++ )
         {
-            gmult_tab[i][j] = gmult( i, j );
+            gmult_tab[a][b] = gmult( a, gpoly[b] );
         }
     }
 }
@@ -116,7 +116,8 @@ void build_gf_tab( void )
 
 #endif 
 }
-inline uchar rs_round( void )
+/*
+inline uchar old_rs_round( void )
 {
     int i;
     uchar sum = 0;
@@ -127,14 +128,82 @@ inline uchar rs_round( void )
     }
     return sum;
 }
-inline void l_update( uchar val )
+*/
+inline uchar rs_round( uchar val )
 {
-    int i;
-    for( i = 0; i < RS_LEN-1; i++ )
-    {
-        l_shift[i] = l_shift[i+1];
-    }
-    l_shift[RS_LEN-1] = val;
+    uchar sum = 0;
+
+    sum = gadd(sum,gmul(l_shift[0],0));
+    l_shift[0] = l_shift[1];
+    sum = gadd(sum,gmul(l_shift[1],1));
+    l_shift[1] = l_shift[2];
+    sum = gadd(sum,gmul(l_shift[2],2));
+    l_shift[2] = l_shift[3];
+    sum = gadd(sum,gmul(l_shift[3],3));
+    l_shift[3] = l_shift[4];
+    sum = gadd(sum,gmul(l_shift[4],4));
+    l_shift[4] = l_shift[5];
+    sum = gadd(sum,gmul(l_shift[5],5));
+    l_shift[5] = l_shift[6];
+    sum = gadd(sum,gmul(l_shift[6],6));
+    l_shift[6] = l_shift[7];
+    sum = gadd(sum,gmul(l_shift[7],7));
+    l_shift[7] = l_shift[8];
+    sum = gadd(sum,gmul(l_shift[8],8));
+    l_shift[8] = l_shift[9];
+    sum = gadd(sum,gmul(l_shift[9],9));
+    l_shift[9] = l_shift[10];
+    sum = gadd(sum,gmul(l_shift[10],10));
+    l_shift[10] = l_shift[11];
+    sum = gadd(sum,gmul(l_shift[11],11));
+    l_shift[11] = l_shift[12];
+    sum = gadd(sum,gmul(l_shift[12],12));
+    l_shift[12] = l_shift[13];
+    sum = gadd(sum,gmul(l_shift[13],13));
+    l_shift[13] = l_shift[14];
+    sum = gadd(sum,gmul(l_shift[14],14));
+    l_shift[14] = l_shift[15];
+    sum = gadd(sum,gmul(l_shift[15],15));
+    l_shift[15] = sum ^ val;
+    return sum;
+}
+inline uchar rs_round( void )
+{
+    uchar sum;
+
+    sum = gadd(0,gmul(l_shift[0],0));
+    l_shift[0] = l_shift[1];
+    sum = gadd(sum,gmul(l_shift[1],1));
+    l_shift[1] = l_shift[2];
+    sum = gadd(sum,gmul(l_shift[2],2));
+    l_shift[2] = l_shift[3];
+    sum = gadd(sum,gmul(l_shift[3],3));
+    l_shift[3] = l_shift[4];
+    sum = gadd(sum,gmul(l_shift[4],4));
+    l_shift[4] = l_shift[5];
+    sum = gadd(sum,gmul(l_shift[5],5));
+    l_shift[5] = l_shift[6];
+    sum = gadd(sum,gmul(l_shift[6],6));
+    l_shift[6] = l_shift[7];
+    sum = gadd(sum,gmul(l_shift[7],7));
+    l_shift[7] = l_shift[8];
+    sum = gadd(sum,gmul(l_shift[8],8));
+    l_shift[8] = l_shift[9];
+    sum = gadd(sum,gmul(l_shift[9],9));
+    l_shift[9] = l_shift[10];
+    sum = gadd(sum,gmul(l_shift[10],10));
+    l_shift[10] = l_shift[11];
+    sum = gadd(sum,gmul(l_shift[11],11));
+    l_shift[11] = l_shift[12];
+    sum = gadd(sum,gmul(l_shift[12],12));
+    l_shift[12] = l_shift[13];
+    sum = gadd(sum,gmul(l_shift[13],13));
+    l_shift[13] = l_shift[14];
+    sum = gadd(sum,gmul(l_shift[14],14));
+    l_shift[14] = l_shift[15];
+    sum = gadd(sum,gmul(l_shift[15],15));
+    l_shift[15] = 0;
+    return sum;
 }
 //
 // Build all the required tables
@@ -170,21 +239,28 @@ void dvb_rs_init( void )
 //
 void dvb_rs_encode( uchar *inout )
 {
-    // Clear the shift register
-    memset(l_shift,0,sizeof(uchar)*RS_LEN);
+    // The shift register has been zeroed by  this point
+    uchar *b = inout;
     // Data phase use feedback
-    int op = 0;int i;
+    int i;
 
-    for( i = 0; i < M_LEN; i++ )
-    {
-        l_update( gadd(inout[op], rs_round()));
-        op++;
-    }
-    // Parity phase use zeros
-    for( i = 0; i < P_LEN; i++ )
-    {
-        inout[op] = rs_round();
-        l_update( 0 );
-        op++;
-    }
+    for( i = 0; i < M_LEN; i++ ) rs_round(b[i]);
+
+    // Parity phase use 16 zeros
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
+    b[i++] = rs_round();
 }

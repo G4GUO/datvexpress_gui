@@ -159,18 +159,28 @@ void MainWindow::InitialUpdateDisplayedDVBParams(void)
     // Video Capture device
 
     // List available video capture devices
-    CaptureList list;
-    populate_video_capture_list( &list );
-    for( int i = 0; i < list.items; i++ )
+    CaptureCardList clist;
+    populate_video_capture_list( &clist );
+    for( int i = 0; i < clist.items; i++ )
     {
-        ui->comboBoxVideoCaptureDevice->addItem(list.item[i]);
+        ui->comboBoxVideoCaptureDevice->addItem(clist.item[i]);
+    }
+    // List the inputs to the currently selected device
+    sys_config cfg;
+    dvb_get_config( &cfg );
+    CaptureInputList ilist;
+    populate_video_input_list( cfg.video_capture_device_name, &ilist );
+
+    for( int i = 0; i < ilist.items; i++ )
+    {
+        ui->comboBoxVideoInput->addItem(ilist.item[i]);
     }
 
 #ifdef _USE_SW_CODECS
-    populate_audio_capture_list( &list );
-    for( int i = 0; i < list.items; i++ )
+    populate_audio_capture_list( &clist );
+    for( int i = 0; i < clist.items; i++ )
     {
-        ui->comboBoxAudioCaptureDevice->addItem(list.item[i]);
+        ui->comboBoxAudioCaptureDevice->addItem(clist.item[i]);
     }
 #else
     ui->comboBoxAudioCaptureDevice->hide();
@@ -408,7 +418,9 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     // Video Capture device
     int n = ui->comboBoxVideoCaptureDevice->findText(cfg.video_capture_device_name);
     if( n >= 0 ) ui->comboBoxVideoCaptureDevice->setCurrentIndex(n);
-    ui->spinBoxSelectInput->setValue(cfg.video_capture_device_input);
+
+        n = ui->comboBoxVideoInput->findText(cfg.video_capture_input_name);
+    if( n >= 0 ) ui->comboBoxVideoInput->setCurrentIndex(n);
 
     // Audio Capture device
     n = ui->comboBoxAudioCaptureDevice->findText(cfg.audio_capture_device_name);
@@ -593,14 +605,36 @@ void MainWindow::on_pushButtonApplyService_clicked()
 
 void MainWindow::on_pushButtonApplyVideoCapture_clicked()
 {
-    QString st;
+    QString st[2];
 
-    st = ui->comboBoxVideoCaptureDevice->currentText();
-    dvb_set_video_capture_device( st.toLatin1() );
+    // Video Capture device
+    st[0] = ui->comboBoxVideoCaptureDevice->currentText();
+    dvb_set_video_capture_device( st[0].toLatin1() );
 
-    int input = ui->spinBoxSelectInput->value();
-    dvb_set_video_capture_device_input( input );
+    // Video Capture device input
+    st[1] = ui->comboBoxVideoInput->currentText();
+    int input = ui->comboBoxVideoInput->currentIndex();
+    if(input < 0) input = 0;
+    dvb_set_video_capture_device_input( input, st[1].toLatin1() );
 
+    // Update the list of Inputs for the capture device
+    if(1)
+    {
+        int count = ui->comboBoxVideoInput->count();
+
+        for( int i = 0; i < count; i++ )
+        {
+            ui->comboBoxVideoInput->removeItem(0);
+        }
+        CaptureInputList ilist;
+        populate_video_input_list( (const char *)st[0].toLatin1(), &ilist );
+
+        for( int i = 0; i < ilist.items; i++ )
+        {
+            ui->comboBoxVideoInput->addItem(ilist.item[i]);
+        }
+    }
+    // Transmitter hardware in use
     QString str = ui->comboBoxTransmitterHWType->currentText();
 
     // Save the transmitter hardware type
@@ -615,8 +649,8 @@ void MainWindow::on_pushButtonApplyVideoCapture_clicked()
     if( str == S_EXPRESS_UDP )
         dvb_set_tx_hardware_type( HW_EXPRESS_UDP, S_EXPRESS_UDP );
     // Audio device
-    st = ui->comboBoxAudioCaptureDevice->currentText();
-    dvb_set_audio_capture_device( st.toLatin1() );
+    st[0] = ui->comboBoxAudioCaptureDevice->currentText();
+    dvb_set_audio_capture_device( st[0].toLatin1() );
 
     // Now get the IP address and socket number for the UDP server
     str = ui->lineEditServerIpAddress->text();
@@ -980,3 +1014,4 @@ void MainWindow::on_pushButtonApplySR_clicked()
     SettingsUpdateMessageBox();
     NextUpdateDisplayedDVBParams();
 }
+

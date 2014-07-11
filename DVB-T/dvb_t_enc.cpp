@@ -79,7 +79,7 @@ void symbol_interleave( void )
 //
 // Input array, output array, bit interleave lookup table
 //
-void bit_interleave( uchar *in, uchar *out, int *tab )
+void inline bit_interleave( uchar *in, uchar *out, int *tab )
 {
     int i;
     for( i = 0; i < BIL; i++ )
@@ -159,7 +159,9 @@ void dvb_t_enc_dibit( uchar *in, int length )
 {
     int i;
 //    printf("Len %d\n",length);
+
     // Two bits per symbol
+
     if( m_format.co == CO_QPSK )
     {
         for( i = 0; i < length; i++ )
@@ -176,6 +178,7 @@ void dvb_t_enc_dibit( uchar *in, int length )
     }
 
     // 4 bits per symbol
+
     if( m_format.co == CO_16QAM )
     {
         for( i = 0; i < length; i++ )
@@ -204,6 +207,7 @@ void dvb_t_enc_dibit( uchar *in, int length )
     }
 
     // 6 bits per symbol
+
     if( m_format.co == CO_64QAM )
     {
         for( i = 0; i < length; i++ )

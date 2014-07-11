@@ -1360,31 +1360,14 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="spinBoxSelectInput">
-         <property name="maximum">
-          <number>10</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <spacer name="horizontalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="2">
+       <item row="0" column="1">
         <widget class="QComboBox" name="comboBoxVideoCaptureDevice"/>
        </item>
-       <item row="2" column="2">
+       <item row="2" column="1">
         <widget class="QComboBox" name="comboBoxAudioCaptureDevice"/>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="comboBoxVideoInput"/>
        </item>
       </layout>
      </widget>

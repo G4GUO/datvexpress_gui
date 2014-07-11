@@ -102,6 +102,48 @@ void write_final_tx_queue( scmplx* samples, int length )
     }
     pthread_mutex_unlock( &mutex );
 }
+void write_final_tx_queue( fft_complex* samples, int length )
+{
+    int i,index;
+    scmplx *s;
+
+    index = 0;
+
+    // Get exclusive access
+    pthread_mutex_lock( &mutex );
+
+    if( m_tx_q.size() < m_final_txq_len)
+    {
+        for( i = 0; i < (length - TX_BUFFER_LENGTH); i += TX_BUFFER_LENGTH )
+        {
+            dvb_buffer *b = dvb_buffer_alloc( TX_BUFFER_LENGTH, BUF_SCMPLX );
+            s = (scmplx*)(b->b);
+            for( int n = 0; n < TX_BUFFER_LENGTH; n++, index++)
+            {
+                s[n].re = (short)(samples[index].re*0x7FFF) | 0x0001;// Mark I channel, LSB is always '1'
+                s[n].im = (short)(samples[index].im*0x7FFF) & 0xFFFE;// Mark Q channel, LSB is always '0'
+            }
+            m_tx_q.push( b );
+            // New work available
+            sem_post( &work_sem );
+        }
+        length = length - i;
+        if(length > 0 )
+        {
+            dvb_buffer *b = dvb_buffer_alloc( length, BUF_SCMPLX );
+            s = (scmplx*)(b->b);
+            for( int n = 0; n < TX_BUFFER_LENGTH; n++, index++)
+            {
+                s[n].re = (short)(samples[index].re*0x7FFF) | 0x0001;// Mark I channel, LSB is always '1'
+                s[n].im = (short)(samples[index].im*0x7FFF) & 0xFFFE;// Mark Q channel, LSB is always '0'
+            }
+            m_tx_q.push( b );
+            // New work available
+            sem_post( &work_sem );
+        }
+    }
+    pthread_mutex_unlock( &mutex );
+}
 //
 // Queue Tranport Packets
 //

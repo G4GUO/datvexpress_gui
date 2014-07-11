@@ -32,7 +32,7 @@ void dvb_set_NetworkId( u_int16_t id );
 void dvb_set_StreamId( u_int16_t id );
 void dvb_set_ServiceId( u_int16_t id );
 void dvb_set_ProgramNr( u_int16_t id );
-void dvb_set_video_capture_device_input( int input );
+void dvb_set_video_capture_device_input( int input, const char *name );
 void dvb_set_tx_hardware_type( int type, const char *name );
 
 // EVENT INFORMATION

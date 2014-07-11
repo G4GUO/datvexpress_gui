@@ -40,8 +40,9 @@ u8 DVB2::calc_crc8( u8 *b, int len )
 //
 // MSB is sent first
 //
-// The polynomial has been reversed
+// The polynomial has been reversed, this is only used for the BB header
 //
+
 int DVB2::add_crc8_bits( Bit *in, int length )
 {
     int crc = 0;
@@ -61,6 +62,7 @@ int DVB2::add_crc8_bits( Bit *in, int length )
     }
     return 8;// Length of CRC
 }
+
 //
 // Formatted into a binary array
 //

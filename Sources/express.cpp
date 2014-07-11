@@ -1139,13 +1139,6 @@ int express_send_buffer( dvb_buffer *b )
 //
 void express_convert_to_16_bit_samples( dvb_buffer *b )
 {
-    scmplx *s = (scmplx*)b->b;
-
-    for( int i = 0; i < b->len; i++ )
-    {
-       s[i].re = s[i].re | 0x0001;// Mark I channel, LSB is always '1'
-       s[i].im = s[i].im & 0xFFFE;// Mark Q channel, LSB is always '0'
-    }
     b->len = b->len * sizeof(scmplx);
 }
 //

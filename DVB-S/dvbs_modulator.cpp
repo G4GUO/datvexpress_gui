@@ -34,8 +34,8 @@ void dvb_s_encode_and_modulate( uchar *tp, uchar *dibit )
 
     for( int i = 0; i < len; i++ )
     {
-        m_sams[i].re = tx_lookup[dibit[i]].re;
-        m_sams[i].im = tx_lookup[dibit[i]].im;
+        m_sams[i].re = tx_lookup[dibit[i]].re | 0x0001;// Mark I channel, LSB is always '1';
+        m_sams[i].im = tx_lookup[dibit[i]].im & 0xFFFE;// Mark Q channel, LSB is always '0';
     }
     write_final_tx_queue( m_sams, len );
 }
@@ -51,7 +51,6 @@ void dvbt_modulate( fft_complex *in, int length )
 
     for( int i = 0; i < length; i++)
     {
-
         if(fabs(in[i].re)>0.707)
         {
             if(in[i].re > 0 )
@@ -66,9 +65,9 @@ void dvbt_modulate( fft_complex *in, int length )
             else
                 in[i].im = -0.707;
         }
+        m_sams[i].re = (short)(in[i].re*0x7FFF) | 0x0001;// Mark I channel, LSB is always '1'
+        m_sams[i].im = (short)(in[i].im*0x7FFF) & 0xFFFE;// Mark Q channel, LSB is always '0'
 
-        m_sams[i].re = (short)(in[i].re*0x7FFF);
-        m_sams[i].im = (short)(in[i].im*0x7FFF);
     }
     // We should now queue the symbols
     write_final_tx_queue( m_sams, length);
