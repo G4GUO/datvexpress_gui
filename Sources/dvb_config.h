@@ -36,7 +36,8 @@ typedef enum{
     CAP_DEV_TYPE_FIREWIRE,
     CAP_DEV_TYPE_SD_HAUP,
     CAP_DEV_TYPE_HD_HAUP,
-    CAP_DEV_TYPE_SA7134
+    CAP_DEV_TYPE_SA7134,
+    CAP_DEV_TYPE_SA7113
 }CapDevType;
 
 // Capture device configuration

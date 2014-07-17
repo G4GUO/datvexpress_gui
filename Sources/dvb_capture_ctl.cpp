@@ -288,6 +288,10 @@ CapDevType get_video_device_type_from_driver( const char *driver )
     {
         type = CAP_DEV_TYPE_SA7134;
     }
+    if(strncmp((const char*)driver,"em28xx",6) == 0)
+    {
+        type = CAP_DEV_TYPE_SA7113;
+    }
     if(strncmp((const char*)driver,"sonixj",10) == 0)
     {
         type = CAP_DEV_TYPE_NONE;
@@ -746,6 +750,15 @@ void dvb_cap_ctl( void )
 #ifdef _USE_SW_CODECS
 
     if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
+    {
+        info.video_bitrate     = calculate_video_bitrate();
+        info.audio_bitrate     = 192000;
+        info.video_codec_class = CODEC_MPEG2;
+        dvb_config_save_and_update( &info );
+        an_configure_capture_card();
+    }
+
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 )
     {
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;

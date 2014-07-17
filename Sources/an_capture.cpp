@@ -24,9 +24,10 @@ extern int m_i_fd;
 extern snd_pcm_t *m_audio_handle;
 
 // Local variables
-static int m_image_size;
+static struct SwsContext *m_sws;
 static AVPacket        m_avpkt[4];
 static AVCodecContext *m_pC[4];
+static AVPicture m_PictureVideoSrc;
 static AVFrame *m_pFrameVideo;
 static AVFrame *m_pFrameAudio;
 static uint8_t m_eb[2][INBUF_SIZE];
@@ -55,22 +56,18 @@ struct buffer
 static struct buffer *m_buffers;
 static unsigned int   m_n_buffers;
 
-void an_set_image_size( void  )
+void an_set_image_size( AVPixelFormat capfmt  )
 {
-    // Video
+    // Video Encoder
     m_pFrameVideo         = av_frame_alloc();
     m_pFrameVideo->width  = m_width;
     m_pFrameVideo->height = m_height;
     m_pFrameVideo->format = AV_PIX_FMT_YUV420P;
 
-    avpicture_alloc((AVPicture*) m_pFrameVideo, \
-                   AV_PIX_FMT_YUV420P,\
-                   m_width, \
-                   m_height );
-
-    m_image_size = avpicture_get_size(AV_PIX_FMT_YUV420P, \
-                                      m_width, \
-                                      m_height );
+    // This is the 'Picture' that will be passed to the encoder
+    avpicture_alloc((AVPicture*) m_pFrameVideo, AV_PIX_FMT_YUV420P, m_width, m_height );
+    // Capture Picture if image conversion is required
+    avpicture_alloc( &m_PictureVideoSrc, capfmt, m_width, m_height );
 }
 
 void an_set_audio_size( void  )
@@ -170,9 +167,8 @@ void an_dummy_frame(AVFrame *frame, int h, int w )
 
 void *an_video_io_capturing_thread( void *arg )
 {
-    int val,bytes_left;
+    int val;
     u_int8_t *b;
-    int policy = 0;
 
 //   b = m_pFrameVideo->data[0];
      b = (u_int8_t*)av_malloc(VIDEO_CAPTURE_SIZE);
@@ -230,7 +226,17 @@ void *an_video_mmap_capturing_thread( void *arg )
             buf.memory = V4L2_MEMORY_MMAP;
             if(ioctl( m_i_fd, VIDIOC_DQBUF, &buf)>= 0)
             {
-                avpicture_fill((AVPicture*)m_pFrameVideo, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUV420P, m_width, m_height);
+                if( m_sws == NULL )
+                {
+                    // No conversion needed
+                    avpicture_fill((AVPicture*)m_pFrameVideo, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUV420P, m_width, m_height);
+                }
+                else
+                {
+                    avpicture_fill( &m_PictureVideoSrc, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUYV422, m_width, m_height);
+                    sws_scale( m_sws, m_PictureVideoSrc.data, m_PictureVideoSrc.linesize, 0, m_height,
+                                      m_pFrameVideo->data,    m_pFrameVideo->linesize);
+                }
                 an_capture_video();
 //                process_image(buffers[buf.index].start, buf.bytesused);
                 ioctl(m_i_fd, VIDIOC_QBUF, &buf);
@@ -262,16 +268,13 @@ void an_start_io_capture(void)
     m_audio_pts  = 0;
     // Create the mutex
     pthread_mutex_init( &mutex, NULL );
-    int ret;
     struct sched_param params;
     pthread_t this_thread = pthread_self();
 
     // We'll set the priority to the maximum.
 //    struct sched_param params;
     params.sched_priority = 50;//sched_get_priority_max(SCHED_FIFO);
-    ret = pthread_setschedparam(this_thread, SCHED_FIFO, &params);
-//           printf("VAL %d\n",ret);
-
+    pthread_setschedparam(this_thread, SCHED_FIFO, &params);
     pthread_create( &an_thread[0], NULL, an_video_io_capturing_thread, NULL );
 }
 //
@@ -335,7 +338,7 @@ void an_start_streaming_capture(int fd)
     //
     // Start the capturing
     //
-    for (int i = 0; i < m_n_buffers; ++i)
+    for (unsigned int i = 0; i < m_n_buffers; ++i)
     {
         struct v4l2_buffer buf;
 
@@ -395,7 +398,6 @@ int an_init_codecs( void )
             loggerf("Unable to open MPEG2 Codec");
             return -1;
         }
-        an_set_image_size();
     }
     else
     {
@@ -472,6 +474,7 @@ void an_configure_capture_card( void )
     struct v4l2_format  fmt;
     sys_config info;
     int input;
+    u32 pix_fmt;
 
     dvb_config_get( &info );
 
@@ -493,16 +496,35 @@ void an_configure_capture_card( void )
     }
 
     // Analogue Video capture
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
+    {
+        pix_fmt = V4L2_PIX_FMT_YUV420;
+        m_sws   = NULL;
+        an_set_image_size( AV_PIX_FMT_YUV420P );
+    }
+
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 )
+    {
+        pix_fmt = V4L2_PIX_FMT_YUYV; // capture format
+
+        // Format conversion will be required
+        m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
+                                m_width, m_height, AV_PIX_FMT_YUV420P,
+                                SWS_BICUBIC, NULL,NULL, NULL);
+        an_set_image_size( AV_PIX_FMT_YUYV422 );
+    }
+
     fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width       = m_width;
     fmt.fmt.pix.height      = m_height;
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+    fmt.fmt.pix.pixelformat = pix_fmt;
     fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
     if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) < 0)
     {
         logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
     }
+
     if(ioctl(m_i_fd, VIDIOC_G_FMT, &fmt)<0 )
         logger("can't get format");
 
@@ -540,15 +562,16 @@ void an_configure_capture_card( void )
         return;
     }
     unsigned int rate = 48000;
-    snd_pcm_hw_params_malloc(&hw_params);
-    snd_pcm_hw_params_any(m_audio_handle, hw_params);
-    snd_pcm_hw_params_set_access(m_audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
-    snd_pcm_hw_params_set_format(m_audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
-    snd_pcm_hw_params_set_rate_near(m_audio_handle, hw_params, &rate, 0);
-    snd_pcm_hw_params_set_channels(m_audio_handle, hw_params, 2);
-    snd_pcm_hw_params(m_audio_handle, hw_params);
+    int r;
+    r = snd_pcm_hw_params_malloc(&hw_params);
+    r = snd_pcm_hw_params_any(m_audio_handle, hw_params);
+    r = snd_pcm_hw_params_set_access(m_audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    r = snd_pcm_hw_params_set_format(m_audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
+    r = snd_pcm_hw_params_set_rate_near(m_audio_handle, hw_params, &rate, 0);
+    r = snd_pcm_hw_params_set_channels(m_audio_handle, hw_params, 2);
+    r = snd_pcm_hw_params(m_audio_handle, hw_params);
     snd_pcm_hw_params_free(hw_params);
-    snd_pcm_prepare(m_audio_handle);
+    r = snd_pcm_prepare(m_audio_handle);
 
     an_init_codecs();
     m_capturing = true;

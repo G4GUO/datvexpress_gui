@@ -6,6 +6,6 @@
 #define USE_AVFFT
 
 // Define this to enable software codecs
-//#define _USE_SW_CODECS
+#define _USE_SW_CODECS
 
 #endif // DVB_OPTIONS_H
