@@ -32,7 +32,7 @@ unix{
 }
 
 LIBS += -lfftw -lpthread
-LIBS += -lavdevice -lavresample -lavformat -lavcodec -lavutil -lswresample -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2
+LIBS += -lavdevice -lavresample -lavformat -lavcodec -lavutil -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2
 LIBS += -lasound
 
 INCLUDEPATH += Sources

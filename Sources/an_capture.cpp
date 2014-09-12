@@ -494,25 +494,11 @@ void an_configure_capture_card( void )
 
             ioctl(m_i_fd, VIDIOC_S_CROP, &crop);
     }
-
+    //
     // Analogue Video capture
-    if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
-    {
-        pix_fmt = V4L2_PIX_FMT_YUV420;
-        m_sws   = NULL;
-        an_set_image_size( AV_PIX_FMT_YUV420P );
-    }
-
-    if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 )
-    {
-        pix_fmt = V4L2_PIX_FMT_YUYV; // capture format
-
-        // Format conversion will be required
-        m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
-                                m_width, m_height, AV_PIX_FMT_YUV420P,
-                                SWS_BICUBIC, NULL,NULL, NULL);
-        an_set_image_size( AV_PIX_FMT_YUYV422 );
-    }
+    //
+    pix_fmt = V4L2_PIX_FMT_YUV420;
+    m_sws   = NULL;
 
     fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width       = m_width;
@@ -520,9 +506,30 @@ void an_configure_capture_card( void )
     fmt.fmt.pix.pixelformat = pix_fmt;
     fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
-    if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) < 0)
+    if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
     {
-        logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
+        an_set_image_size( AV_PIX_FMT_YUV420P );
+    }
+    else
+    {
+        pix_fmt = V4L2_PIX_FMT_YUYV; // capture format
+        fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        fmt.fmt.pix.width       = m_width;
+        fmt.fmt.pix.height      = m_height;
+        fmt.fmt.pix.pixelformat = pix_fmt;
+        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
+        {
+            // Format conversion will be required
+            m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
+                                    m_width, m_height, AV_PIX_FMT_YUV420P,
+                                    SWS_BICUBIC, NULL,NULL, NULL);
+            an_set_image_size( AV_PIX_FMT_YUYV422 );
+        }
+        else
+        {
+            logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
+        }
     }
 
     if(ioctl(m_i_fd, VIDIOC_G_FMT, &fmt)<0 )
@@ -554,7 +561,6 @@ void an_configure_capture_card( void )
     // Analogue sound capture
     //
     snd_pcm_hw_params_t *hw_params;
-
 
     if(snd_pcm_open(&m_audio_handle, "pulse", SND_PCM_STREAM_CAPTURE, 0)< 0 )
     {
