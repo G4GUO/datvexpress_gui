@@ -51,6 +51,9 @@ long double dvb_t_get_sample_rate( void )
     case CH_2:
         srate = srate*2.0*2.0;
          break;
+    case CH_1:
+        srate = srate*1.0*2.0;
+         break;
     default:
         break;
     }
@@ -82,7 +85,8 @@ double dvb_t_get_symbol_rate( void )
     }
     if(( m_format.chan == CH_4 ) ||
        ( m_format.chan == CH_3 ) ||
-       ( m_format.chan == CH_2 ))
+       ( m_format.chan == CH_2 ) ||
+       ( m_format.chan == CH_1 ))
     {
         srate = srate/2;
     }

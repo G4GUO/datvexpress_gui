@@ -96,6 +96,7 @@ extern "C" {
 #define CH_4     3
 #define CH_3     4
 #define CH_2     5
+#define CH_1     6
 
 typedef struct{
 	uchar co;

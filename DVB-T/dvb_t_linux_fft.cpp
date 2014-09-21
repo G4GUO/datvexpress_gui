@@ -133,6 +133,7 @@ void dvbt_fft_modulate( fft_complex *in, int guard )
         case CH_4:
         case CH_3:
         case CH_2:
+        case CH_1:
             fft_4k( in, m_fft_out );
             size  = M4KS;
             guard = guard*2;
@@ -152,6 +153,7 @@ void dvbt_fft_modulate( fft_complex *in, int guard )
         case CH_4:
         case CH_3:
         case CH_2:
+        case CH_1:
             fft_16k( in, m_fft_out );
             size = M16KS;
             guard = guard*2;

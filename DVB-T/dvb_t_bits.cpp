@@ -54,6 +54,7 @@ int dvb_t_raw_bitrate(void)
     if( m_format.chan == CH_4 ) rate = (dvb_t_bitrates[index]*8)/14;
     if( m_format.chan == CH_3 ) rate = (dvb_t_bitrates[index]*6)/14;
     if( m_format.chan == CH_2 ) rate = (dvb_t_bitrates[index]*8)/28;
+    if( m_format.chan == CH_1 ) rate = (dvb_t_bitrates[index]*8)/56;
 
     return( rate );
 }

@@ -117,6 +117,7 @@ void MainWindow::InitialUpdateDisplayedDVBParams(void)
     ui->comboBoxDVBTChannel->addItem(S_CH_4MHZ);
     ui->comboBoxDVBTChannel->addItem(S_CH_3MHZ);
     ui->comboBoxDVBTChannel->addItem(S_CH_2MHZ);
+    ui->comboBoxDVBTChannel->addItem(S_CH_1MHZ);
 
     // DVB-S2
     ui->comboBoxDVBS2Modulation->addItem(S_M_QPSK);
@@ -324,6 +325,7 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     if( cfg.dvbt_fmt.chan == CH_4 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_4MHZ);
     if( cfg.dvbt_fmt.chan == CH_3 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_3MHZ);
     if( cfg.dvbt_fmt.chan == CH_2 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_2MHZ);
+    if( cfg.dvbt_fmt.chan == CH_1 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_1MHZ);
     ui->comboBoxDVBTChannel->setCurrentIndex(idx);
 
     // DVB-S2
@@ -485,6 +487,7 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
         if(cfg.dvbt_fmt.chan == CH_4) mode += S_CH_4MHZ;
         if(cfg.dvbt_fmt.chan == CH_3) mode += S_CH_3MHZ;
         if(cfg.dvbt_fmt.chan == CH_2) mode += S_CH_2MHZ;
+        if(cfg.dvbt_fmt.chan == CH_1) mode += S_CH_1MHZ;
 
         mode += " ";
 
@@ -701,6 +704,7 @@ void MainWindow::on_pushButtonApplyDVBT_clicked()
     if( str == S_CH_4MHZ ) cfg.dvbt_fmt.chan = CH_4;
     if( str == S_CH_3MHZ ) cfg.dvbt_fmt.chan = CH_3;
     if( str == S_CH_2MHZ ) cfg.dvbt_fmt.chan = CH_2;
+    if( str == S_CH_1MHZ ) cfg.dvbt_fmt.chan = CH_1;
 
     dvb_set_dvbt_params( &cfg );
     SettingsUpdateMessageBox();

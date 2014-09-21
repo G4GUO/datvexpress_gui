@@ -72,6 +72,7 @@
 #define S_CH_4MHZ  "4MHz"
 #define S_CH_3MHZ  "3MHz"
 #define S_CH_2MHZ  "2MHz"
+#define S_CH_1MHZ  "1MHz"
 #define S_FM_NORMAL "Normal"
 #define S_FM_SHORT  "Short"
 #define S_ALPHA_NH  "Alpha NH"
