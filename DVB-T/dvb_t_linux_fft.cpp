@@ -49,9 +49,9 @@ static void fft_2k( fft_complex *in, fft_complex *out )
 static void fft_4k( fft_complex *in, fft_complex *out )
 {
     // Zero the unused parts of the array
-    memset(&m_fft_in[M2KS/2],0,sizeof(fft_complex)*M2KS);
+    memset(&m_fft_in[M4KS/4],0,sizeof(fft_complex)*M4KS/2);
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M2KS*3/2], &in[0],      sizeof(fft_complex)*M2KS/2);
+    memcpy(&m_fft_in[M4KS*3/4], &in[0],      sizeof(fft_complex)*M2KS/2);
     memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
 /*
     int i,m;
@@ -69,6 +69,33 @@ static void fft_4k( fft_complex *in, fft_complex *out )
     fftw_one( m_fftw_4k_plan, m_fft_in, out );
 #endif
     return;
+}
+//
+// Interpolate by 4 using an 8K FFT
+//
+static void fft_2k_nb( fft_complex *in, fft_complex *out )
+{
+    // Zero the unused parts of the array
+    memset(&m_fft_in[M8KS/8],0,sizeof(fft_complex)*M8KS*6/8);
+    // Copy the data into the correct bins
+    // Copy the data into the correct bins
+    memcpy(&m_fft_in[M8KS*7/8], &in[0],      sizeof(fft_complex)*M2KS/2);
+    memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
+/*
+    int i,m;
+    m = (M8KS/2);
+    for( i = 0; i < (M8KS); i++ )
+    {
+        m_fft_in[m] = in[i];
+        m = (m+1)%M8KS;
+    }
+*/
+#ifdef USE_AVFFT
+    av_fft_permute( m_avfft_8k_context, m_fft_in );
+    av_fft_calc(    m_avfft_8k_context, m_fft_in );
+#else
+    fftw_one( m_fftw_8k_plan, m_fft_in, out );
+#endif
 }
 static void fft_8k( fft_complex *in, fft_complex *out )
 {
@@ -120,23 +147,47 @@ static void fft_16k( fft_complex *in, fft_complex *out )
 void dvbt_fft_modulate( fft_complex *in, int guard )
 {
     int size = 0;
+    fft_complex *out;
+
     if( m_format.tm == TM_2K)
     {
         switch( m_format.chan )
         {
-        case CH_8:
-        case CH_7:
-        case CH_6:
+        case CH_8M:
+        case CH_7M:
+        case CH_6M:
             fft_2k( in, m_fft_out );
             size = M2KS;
             break;
-        case CH_4:
-        case CH_3:
-        case CH_2:
-        case CH_1:
+        case CH_4M:
+        case CH_3M:
+        case CH_2M:
+        case CH_1M:
             fft_4k( in, m_fft_out );
             size  = M4KS;
             guard = guard*2;
+            break;
+        case CH_500K:
+            fft_2k_nb( in, m_fft_out );
+            size  = M8KS;
+            guard = guard*4;
+#ifdef USE_AVFFT
+            // Guard
+            dvbt_clip( &m_fft_in, size );
+            dvbt_modulate( &m_fft_in[size-guard], guard);
+            // Data
+            dvbt_modulate( m_fft_in, size );
+#else
+           // Clip the FFT outputs
+           dvbt_clip( m_fft_out, size );
+           // Guard
+           out =  dvbt_filter( &m_fft_out[size-guard], guard );
+           dvbt_modulate( out, guard);
+           // Data
+           out =  dvbt_filter( m_fft_out, size );
+           dvbt_modulate( out, size );
+#endif
+            return;
             break;
         }
     }
@@ -144,31 +195,40 @@ void dvbt_fft_modulate( fft_complex *in, int guard )
     {
         switch( m_format.chan )
         {
-        case CH_8:
-        case CH_7:
-        case CH_6:
+        case CH_8M:
+        case CH_7M:
+        case CH_6M:
             fft_8k( in, m_fft_out );
             size = M8KS;
             break;
-        case CH_4:
-        case CH_3:
-        case CH_2:
-        case CH_1:
+        case CH_4M:
+        case CH_3M:
+        case CH_2M:
+        case CH_1M:
+//        case CH_500K:
             fft_16k( in, m_fft_out );
             size = M16KS;
             guard = guard*2;
             break;
         }
     }
+//    fft_complex *out;
 #ifdef USE_AVFFT
     // Guard
+    dvbt_clip( &m_fft_in, size );
     dvbt_modulate( &m_fft_in[size-guard], guard);
     // Data
     dvbt_modulate( m_fft_in, size );
 #else
+    // Clip the FFT outputs
+    dvbt_clip( m_fft_out, size );
     // Guard
+//    out =  dvbt_filter( &m_fft_out[size-guard], guard );
+//    dvbt_modulate( out, guard);
     dvbt_modulate( &m_fft_out[size-guard], guard);
     // Data
+//    out =  dvbt_filter( m_fft_out, size );
+//    dvbt_modulate( out, size );
     dvbt_modulate( m_fft_out, size );
 #endif
 }

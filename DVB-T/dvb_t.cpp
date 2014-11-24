@@ -33,26 +33,29 @@ long double dvb_t_get_sample_rate( void )
 
     switch( m_format.chan )
     {
-    case CH_8:
+    case CH_8M:
         srate = srate*8.0;
         break;
-    case CH_7:
+    case CH_7M:
         srate = srate*7.0;
         break;
-    case CH_6:
+    case CH_6M:
         srate = srate*6.0;
         break;
-    case CH_4:
+    case CH_4M:
         srate = srate*4.0*2.0;
         break;
-    case CH_3:
+    case CH_3M:
         srate = srate*3.0*2.0;
         break;
-    case CH_2:
+    case CH_2M:
         srate = srate*2.0*2.0;
          break;
-    case CH_1:
+    case CH_1M:
         srate = srate*1.0*2.0;
+         break;
+    case CH_500K:
+        srate = srate*0.5*4.0;
          break;
     default:
         break;
@@ -83,12 +86,16 @@ double dvb_t_get_symbol_rate( void )
             symbol_len += symbol_len/4;
             break;
     }
-    if(( m_format.chan == CH_4 ) ||
-       ( m_format.chan == CH_3 ) ||
-       ( m_format.chan == CH_2 ) ||
-       ( m_format.chan == CH_1 ))
+    if(( m_format.chan == CH_4M ) ||
+       ( m_format.chan == CH_3M ) ||
+       ( m_format.chan == CH_2M ) ||
+       ( m_format.chan == CH_1M ) )
     {
         srate = srate/2;
+    }
+    if( m_format.chan == CH_500K)
+    {
+        srate = srate/4;
     }
     return srate/symbol_len;
 }

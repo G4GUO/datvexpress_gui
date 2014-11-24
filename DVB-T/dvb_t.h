@@ -61,7 +61,7 @@ extern "C" {
 //#define BCH_RPOLY 0x7761
 #define BCH_RPOLY 0x3761
 
-// Definition of mode
+// Definition of mode, these correspond to the values in the TPS
 #define FN_1_SP 0
 #define FN_2_SP 1
 #define FN_3_SP 2
@@ -90,13 +90,14 @@ extern "C" {
 #define TM_2K    0
 #define TM_8K    1
 
-#define CH_8     0
-#define CH_7     1
-#define CH_6     2
-#define CH_4     3
-#define CH_3     4
-#define CH_2     5
-#define CH_1     6
+#define CH_8M     0
+#define CH_7M     1
+#define CH_6M     2
+#define CH_4M     3
+#define CH_3M     4
+#define CH_2M     5
+#define CH_1M     6
+#define CH_500K   7
 
 typedef struct{
 	uchar co;
@@ -110,7 +111,6 @@ typedef struct{
 #define AVG_E8 (1.0/600.0)
 //#define AVG_E2 (1.0/1704.0)
 #define AVG_E2 (1.0/150.0)
-
 
 // Prototypes
 
@@ -161,6 +161,6 @@ void build_tx_sym_tabs( void );
 int dvb_t_raw_bitrate(void);
 
 // dvb_t_lpf.cpp
-int dvbt_filter( fft_complex *in, int length, fft_complex *out );
+fft_complex *dvbt_filter( fft_complex *in, int length );
 
 #endif

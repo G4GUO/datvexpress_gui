@@ -87,7 +87,7 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->dvbt_fmt.fec     = CR_12;
     cfg->dvbt_fmt.gi      = GI_14;
     cfg->dvbt_fmt.tm      = TM_2K;
-    cfg->dvbt_fmt.chan    = CH_7;
+    cfg->dvbt_fmt.chan    = CH_7M;
     cfg->tx_frequency     = 1280000000;
     cfg->tx_level         = 10;
     cfg->video_pid        = P1_VID_PID;

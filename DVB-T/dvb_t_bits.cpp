@@ -48,13 +48,14 @@ int dvb_t_raw_bitrate(void)
     if( m_format.gi == GI_132 ) index += 3;
 
     rate = 0;
-    if( m_format.chan == CH_8 ) rate = (dvb_t_bitrates[index]*8)/7;
-    if( m_format.chan == CH_7 ) rate = dvb_t_bitrates[index];
-    if( m_format.chan == CH_6 ) rate = (dvb_t_bitrates[index]*6)/7;
-    if( m_format.chan == CH_4 ) rate = (dvb_t_bitrates[index]*8)/14;
-    if( m_format.chan == CH_3 ) rate = (dvb_t_bitrates[index]*6)/14;
-    if( m_format.chan == CH_2 ) rate = (dvb_t_bitrates[index]*8)/28;
-    if( m_format.chan == CH_1 ) rate = (dvb_t_bitrates[index]*8)/56;
+    if( m_format.chan == CH_8M )   rate = (dvb_t_bitrates[index]*8)/7;
+    if( m_format.chan == CH_7M )   rate =  dvb_t_bitrates[index];
+    if( m_format.chan == CH_6M )   rate = (dvb_t_bitrates[index]*6)/7;
+    if( m_format.chan == CH_4M )   rate = (dvb_t_bitrates[index]*8)/14;
+    if( m_format.chan == CH_3M )   rate = (dvb_t_bitrates[index]*6)/14;
+    if( m_format.chan == CH_2M )   rate = (dvb_t_bitrates[index]*8)/28;
+    if( m_format.chan == CH_1M )   rate = (dvb_t_bitrates[index]*8)/56;
+    if( m_format.chan == CH_500K ) rate = (dvb_t_bitrates[index]*8)/112;
 
     return( rate );
 }

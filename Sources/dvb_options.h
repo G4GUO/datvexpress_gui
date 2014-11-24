@@ -8,4 +8,7 @@
 // Define this to enable software codecs
 //#define _USE_SW_CODECS
 
+// Define Naroowband operation
+//#define NARROW_BAND
+
 #endif // DVB_OPTIONS_H

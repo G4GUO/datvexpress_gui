@@ -16,7 +16,7 @@
 
 #define DVB_FILTER_BLK_LEN (TAPS*BLOCKS)
 
-#define S_VERSION    "2.02"
+#define S_VERSION    "2.03"
 
 #define S_DVB_S    "DVB-S"
 #define S_DVB_S2   "DVB-S2"
@@ -73,6 +73,7 @@
 #define S_CH_3MHZ  "3MHz"
 #define S_CH_2MHZ  "2MHz"
 #define S_CH_1MHZ  "1MHz"
+#define S_CH_500KHZ  "500KHz"
 #define S_FM_NORMAL "Normal"
 #define S_FM_SHORT  "Short"
 #define S_ALPHA_NH  "Alpha NH"
@@ -119,6 +120,7 @@ int  dvb_conv_encode_frame( uchar *in, uchar *out, int len );
 void dvbs_modulate_init( void );
 void dvb_s_encode_and_modulate( uchar *tp, uchar *dibit );
 void dvbt_modulate( fft_complex *in, int length );
+void dvbt_clip( fft_complex *in, int length );
 void dvbs2_modulate( scmplx *in, int length );
 void dvb_modulate_init(void);
 

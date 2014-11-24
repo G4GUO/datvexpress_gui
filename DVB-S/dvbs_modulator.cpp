@@ -44,13 +44,11 @@ void dvb_s_encode_and_modulate( uchar *tp, uchar *dibit )
 // length is the number of complex samples
 // Output complex samples short
 //
-
-void dvbt_modulate( fft_complex *in, int length )
+void dvbt_clip( fft_complex *in, int length )
 {
-    // Convert to 16 bit fixed point and apply clipping where required
-
     for( int i = 0; i < length; i++)
     {
+
         if(fabs(in[i].re)>0.707)
         {
             if(in[i].re > 0 )
@@ -65,9 +63,17 @@ void dvbt_modulate( fft_complex *in, int length )
             else
                 in[i].im = -0.707;
         }
+    }
+}
+
+void dvbt_modulate( fft_complex *in, int length )
+{
+    // Convert to 16 bit fixed point and apply clipping where required
+
+    for( int i = 0; i < length; i++)
+    {
         m_sams[i].re = (short)(in[i].re*0x7FFF) | 0x0001;// Mark I channel, LSB is always '1'
         m_sams[i].im = (short)(in[i].im*0x7FFF) & 0xFFFE;// Mark Q channel, LSB is always '0'
-
     }
     // We should now queue the symbols
     write_final_tx_queue( m_sams, length);

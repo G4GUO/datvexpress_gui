@@ -118,6 +118,7 @@ void MainWindow::InitialUpdateDisplayedDVBParams(void)
     ui->comboBoxDVBTChannel->addItem(S_CH_3MHZ);
     ui->comboBoxDVBTChannel->addItem(S_CH_2MHZ);
     ui->comboBoxDVBTChannel->addItem(S_CH_1MHZ);
+    ui->comboBoxDVBTChannel->addItem(S_CH_500KHZ);
 
     // DVB-S2
     ui->comboBoxDVBS2Modulation->addItem(S_M_QPSK);
@@ -319,13 +320,14 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     if( cfg.dvbt_fmt.tm == TM_8K ) idx = ui->comboBoxDVBTFFTMode->findText(S_FFT_8K);
     ui->comboBoxDVBTFFTMode->setCurrentIndex(idx);
 
-    if( cfg.dvbt_fmt.chan == CH_8 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_8MHZ);
-    if( cfg.dvbt_fmt.chan == CH_7 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_7MHZ);
-    if( cfg.dvbt_fmt.chan == CH_6 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_6MHZ);
-    if( cfg.dvbt_fmt.chan == CH_4 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_4MHZ);
-    if( cfg.dvbt_fmt.chan == CH_3 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_3MHZ);
-    if( cfg.dvbt_fmt.chan == CH_2 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_2MHZ);
-    if( cfg.dvbt_fmt.chan == CH_1 ) idx = ui->comboBoxDVBTChannel->findText(S_CH_1MHZ);
+    if( cfg.dvbt_fmt.chan == CH_8M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_8MHZ);
+    if( cfg.dvbt_fmt.chan == CH_7M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_7MHZ);
+    if( cfg.dvbt_fmt.chan == CH_6M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_6MHZ);
+    if( cfg.dvbt_fmt.chan == CH_4M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_4MHZ);
+    if( cfg.dvbt_fmt.chan == CH_3M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_3MHZ);
+    if( cfg.dvbt_fmt.chan == CH_2M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_2MHZ);
+    if( cfg.dvbt_fmt.chan == CH_1M ) idx = ui->comboBoxDVBTChannel->findText(S_CH_1MHZ);
+    if( cfg.dvbt_fmt.chan == CH_500K ) idx = ui->comboBoxDVBTChannel->findText(S_CH_500KHZ);
     ui->comboBoxDVBTChannel->setCurrentIndex(idx);
 
     // DVB-S2
@@ -481,13 +483,14 @@ void MainWindow::NextUpdateDisplayedDVBParams(void)
     {
         QString mode;
         mode = "DVB-T ";
-        if(cfg.dvbt_fmt.chan == CH_8) mode += S_CH_8MHZ;
-        if(cfg.dvbt_fmt.chan == CH_7) mode += S_CH_7MHZ;
-        if(cfg.dvbt_fmt.chan == CH_6) mode += S_CH_6MHZ;
-        if(cfg.dvbt_fmt.chan == CH_4) mode += S_CH_4MHZ;
-        if(cfg.dvbt_fmt.chan == CH_3) mode += S_CH_3MHZ;
-        if(cfg.dvbt_fmt.chan == CH_2) mode += S_CH_2MHZ;
-        if(cfg.dvbt_fmt.chan == CH_1) mode += S_CH_1MHZ;
+        if(cfg.dvbt_fmt.chan == CH_8M) mode += S_CH_8MHZ;
+        if(cfg.dvbt_fmt.chan == CH_7M) mode += S_CH_7MHZ;
+        if(cfg.dvbt_fmt.chan == CH_6M) mode += S_CH_6MHZ;
+        if(cfg.dvbt_fmt.chan == CH_4M) mode += S_CH_4MHZ;
+        if(cfg.dvbt_fmt.chan == CH_3M) mode += S_CH_3MHZ;
+        if(cfg.dvbt_fmt.chan == CH_2M) mode += S_CH_2MHZ;
+        if(cfg.dvbt_fmt.chan == CH_1M) mode += S_CH_1MHZ;
+        if(cfg.dvbt_fmt.chan == CH_500K) mode += S_CH_500KHZ;
 
         mode += " ";
 
@@ -698,13 +701,14 @@ void MainWindow::on_pushButtonApplyDVBT_clicked()
     if( str == S_FFT_8K ) cfg.dvbt_fmt.tm = TM_8K;
 
     str = ui->comboBoxDVBTChannel->currentText();
-    if( str == S_CH_8MHZ ) cfg.dvbt_fmt.chan = CH_8;
-    if( str == S_CH_7MHZ ) cfg.dvbt_fmt.chan = CH_7;
-    if( str == S_CH_6MHZ ) cfg.dvbt_fmt.chan = CH_6;
-    if( str == S_CH_4MHZ ) cfg.dvbt_fmt.chan = CH_4;
-    if( str == S_CH_3MHZ ) cfg.dvbt_fmt.chan = CH_3;
-    if( str == S_CH_2MHZ ) cfg.dvbt_fmt.chan = CH_2;
-    if( str == S_CH_1MHZ ) cfg.dvbt_fmt.chan = CH_1;
+    if( str == S_CH_8MHZ ) cfg.dvbt_fmt.chan = CH_8M;
+    if( str == S_CH_7MHZ ) cfg.dvbt_fmt.chan = CH_7M;
+    if( str == S_CH_6MHZ ) cfg.dvbt_fmt.chan = CH_6M;
+    if( str == S_CH_4MHZ ) cfg.dvbt_fmt.chan = CH_4M;
+    if( str == S_CH_3MHZ ) cfg.dvbt_fmt.chan = CH_3M;
+    if( str == S_CH_2MHZ ) cfg.dvbt_fmt.chan = CH_2M;
+    if( str == S_CH_1MHZ ) cfg.dvbt_fmt.chan = CH_1M;
+    if( str == S_CH_500KHZ ) cfg.dvbt_fmt.chan = CH_500K;
 
     dvb_set_dvbt_params( &cfg );
     SettingsUpdateMessageBox();

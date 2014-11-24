@@ -650,12 +650,14 @@ void dvb_cap_ctl( void )
             fmt.fmt.pix.height = 576;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
+            dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
         }
         if(info.cap_format.video_format == CAP_NTSC )
         {
             fmt.fmt.pix.height = 480;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
+            dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_NTSC );
         }
 
         info.video_bitrate = video_bitrate;
@@ -765,6 +767,15 @@ void dvb_cap_ctl( void )
         info.video_codec_class = CODEC_MPEG2;
         dvb_config_save_and_update( &info );
         an_configure_capture_card();
+    }
+
+    if(info.cap_format.video_format == CAP_PAL )
+    {
+        dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
+    }
+    if(info.cap_format.video_format == CAP_PAL )
+    {
+        dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_NTSC );
     }
 #endif
 
