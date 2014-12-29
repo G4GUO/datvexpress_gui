@@ -182,11 +182,11 @@ void dvb_ts_if( uchar *b )
    if((t_info.pmt_detected)&&(id == t_info.pmt_id)&&(t_info.pmt_parsed == 0))
    {
        // We have found the PMT table
-       //printf("PMT detected\n");
+       printf("PMT detected\n");
        dvb_parse_pmt( &b[5] );
        t_info.pmt_parsed   = 1;
        t_info.pcr_id       = pmt.pcr_pid;
-//       printf("PCR detected %d\n",pmt.pcr_pid);
+       printf("PCR detected %d\n",pmt.pcr_pid);
        return;
    }
 }

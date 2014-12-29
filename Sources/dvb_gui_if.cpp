@@ -19,7 +19,7 @@
 #include "mp_tp.h"
 #include "tx_hardware.h"
 
-#define PID_MASK(a) (a&0xFFF)
+#define PID_MASK(a) (a&0x1FFF)
 
 void dvb_get_config( sys_config *cfg )
 {

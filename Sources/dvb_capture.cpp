@@ -123,6 +123,7 @@ void cap_rd_bytes( uchar *b, int len )
             else
                 req = len - offset;
         }
+        if(bytes < 0 ) return;
     }
 }
 
