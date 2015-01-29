@@ -6,6 +6,7 @@
 #include "dvb_t.h"
 
 extern DVBTFormat m_format;
+extern double m_sample_rate;
 
 #ifdef USE_AVFFT
 static FFTContext *m_avfft_2k_context;
@@ -23,21 +24,48 @@ static fft_complex *m_fft_in;
 static fft_complex *m_fft_out;
 #endif
 
+// sinc correction coefficients
+int m_N;
+int m_IR;
+double m_c[M16KS];
+
+void create_correction_table( int N, int IR )
+{
+    double x,sinc;
+    double f = 0.0;
+    double fsr = m_sample_rate;
+    double fstep = fsr / (N*IR);
+
+    for( int i = 0; i < N/2; i++ )
+    {
+        if( f == 0 )
+            sinc = 1.0;
+        else{
+            x = M_PI*f/fsr;
+            sinc = sin(x)/x;
+        }
+        m_c[i+(N/2)]   = 1.0/sinc;
+        m_c[(N/2)-i-1] = 1.0/sinc;
+        f += fstep;
+    }
+}
+
 static void fft_2k( fft_complex *in, fft_complex *out )
 {
 
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M2KS/2], &in[0],      sizeof(fft_complex)*M2KS/2);
-    memcpy(&m_fft_in[0],      &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
-/*
+//    memcpy(&m_fft_in[M2KS/2], &in[0],      sizeof(fft_complex)*M2KS/2);
+//    memcpy(&m_fft_in[0],      &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
+
     int i,m;
     m = (M2KS/2);
     for( i = 0; i < (M2KS); i++ )
     {
-        m_fft_in[m] = in[i];
+        m_fft_in[m].re = in[i].re*m_c[i];
+        m_fft_in[m].im = in[i].im*m_c[i];
         m = (m+1)%(M2KS);
     }
-*/
+
 #ifdef USE_AVFFT
     av_fft_permute( m_avfft_2k_context, m_fft_in );
     av_fft_calc(    m_avfft_2k_context, m_fft_in );
@@ -51,17 +79,18 @@ static void fft_4k( fft_complex *in, fft_complex *out )
     // Zero the unused parts of the array
     memset(&m_fft_in[M4KS/4],0,sizeof(fft_complex)*M4KS/2);
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M4KS*3/4], &in[0],      sizeof(fft_complex)*M2KS/2);
-    memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
-/*
+    //memcpy(&m_fft_in[M4KS*3/4], &in[0],      sizeof(fft_complex)*M2KS/2);
+    //memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
+
     int i,m;
-    m = (M2KS)+(M2KS/2);
+    m = (M4KS/2)+(M4KS/4);
     for( i = 0; i < (M2KS); i++ )
     {
-        m_fft_in[m] = in[i];
+        m_fft_in[m].re = in[i].re*m_c[i];
+        m_fft_in[m].im = in[i].im*m_c[i];
         m = (m+1)%(M2KS*2);
     }
-*/
+
 #ifdef USE_AVFFT
     av_fft_permute( m_avfft_4k_context, m_fft_in );
     av_fft_calc(    m_avfft_4k_context, m_fft_in );
@@ -79,17 +108,18 @@ static void fft_2k_nb( fft_complex *in, fft_complex *out )
     memset(&m_fft_in[M8KS/8],0,sizeof(fft_complex)*M8KS*6/8);
     // Copy the data into the correct bins
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M8KS*7/8], &in[0],      sizeof(fft_complex)*M2KS/2);
-    memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
-/*
+//    memcpy(&m_fft_in[M8KS*7/8], &in[0],      sizeof(fft_complex)*M2KS/2);
+//    memcpy(&m_fft_in[0],        &in[M2KS/2], sizeof(fft_complex)*M2KS/2);
+
     int i,m;
-    m = (M8KS/2);
-    for( i = 0; i < (M8KS); i++ )
+    m = (M8KS)-(M8KS/8);
+    for( i = 0; i < (M2KS); i++ )
     {
-        m_fft_in[m] = in[i];
-        m = (m+1)%M8KS;
+        m_fft_in[m].re = in[i].re*m_c[i];
+        m_fft_in[m].im = in[i].im*m_c[i];
+        m = (m+1)%M2KS;
     }
-*/
+
 #ifdef USE_AVFFT
     av_fft_permute( m_avfft_8k_context, m_fft_in );
     av_fft_calc(    m_avfft_8k_context, m_fft_in );
@@ -100,17 +130,18 @@ static void fft_2k_nb( fft_complex *in, fft_complex *out )
 static void fft_8k( fft_complex *in, fft_complex *out )
 {
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M8KS/2], &in[0],      sizeof(fft_complex)*M8KS/2);
-    memcpy(&m_fft_in[0],      &in[M8KS/2], sizeof(fft_complex)*M8KS/2);
-/*
+//    memcpy(&m_fft_in[M8KS/2], &in[0],      sizeof(fft_complex)*M8KS/2);
+//    memcpy(&m_fft_in[0],      &in[M8KS/2], sizeof(fft_complex)*M8KS/2);
+
     int i,m;
     m = (M8KS/2);
     for( i = 0; i < (M8KS); i++ )
     {
-        m_fft_in[m] = in[i];
+        m_fft_in[m].re = in[i].re*m_c[i];
+        m_fft_in[m].im = in[i].im*m_c[i];
         m = (m+1)%M8KS;
     }
-*/
+
 #ifdef USE_AVFFT
     av_fft_permute( m_avfft_8k_context, m_fft_in );
     av_fft_calc(    m_avfft_8k_context, m_fft_in );
@@ -123,17 +154,18 @@ static void fft_16k( fft_complex *in, fft_complex *out )
     // Zero the unused parts of the array
     memset(&m_fft_in[M8KS/2],0,sizeof(fft_complex)*M8KS);
     // Copy the data into the correct bins
-    memcpy(&m_fft_in[M8KS*3/2], &in[0],      sizeof(fft_complex)*M8KS/2);
-    memcpy(&m_fft_in[0],        &in[M8KS/2], sizeof(fft_complex)*M8KS/2);
-/*
+//    memcpy(&m_fft_in[M8KS*3/2], &in[0],      sizeof(fft_complex)*M8KS/2);
+//    memcpy(&m_fft_in[0],        &in[M8KS/2], sizeof(fft_complex)*M8KS/2);
+
     int i,m;
     m = (M8KS)+(M8KS/2);
     for( i = 0; i < (M8KS); i++ )
     {
-        m_fft_in[m] = in[i];
+        m_fft_in[m].re = in[i].re*m_c[i];
+        m_fft_in[m].im = in[i].im*m_c[i];
         m = (m+1)%(M8KS*2);
     }
-*/
+
 #ifdef USE_AVFFT
     av_fft_permute( m_avfft_16k_context, m_fft_in );
     av_fft_calc(    m_avfft_16k_context, m_fft_in );
@@ -281,6 +313,46 @@ void init_dvb_t_fft( void )
     m_fft_in  = (fft_complex*)fftw_malloc(sizeof(fft_complex)*M16KS);
     m_fft_out = (fft_complex*)fftw_malloc(sizeof(fft_complex)*M16KS);
 #endif
+    if( m_format.tm == TM_2K)
+    {
+        m_N = M2KS;
+        switch( m_format.chan )
+        {
+        case CH_8M:
+        case CH_7M:
+        case CH_6M:
+            m_IR = 1;
+            break;
+        case CH_4M:
+        case CH_3M:
+        case CH_2M:
+        case CH_1M:
+            m_IR = 2;
+            break;
+        case CH_500K:
+            m_IR = 4;
+            break;
+        }
+    }
+    if( m_format.tm == TM_8K)
+    {
+        m_N = M8KS;
+        switch( m_format.chan )
+        {
+        case CH_8M:
+        case CH_7M:
+        case CH_6M:
+            m_IR = 1;
+            break;
+        case CH_4M:
+        case CH_3M:
+        case CH_2M:
+        case CH_1M:
+            m_IR = 2;
+            break;
+        }
+    }
+    create_correction_table( m_N, m_IR );
 }
 void deinit_dvb_t_fft( void )
 {

@@ -151,7 +151,7 @@ void dvbt_fft_modulate( fft_complex *in, int guard );
 void   dvb_t_init( void );
 void   dvb_t_deinit( void );
 void   dvb_t_re_init( void );
-long double dvb_t_get_sample_rate( void );
+double dvb_t_get_sample_rate( void );
 double dvb_t_get_symbol_rate( void );
 
 // dvb_t_qam_tab.cpp

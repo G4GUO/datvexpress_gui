@@ -15,7 +15,7 @@
 #include "dvb_capture_ctl.h"
 
 DVBTFormat m_format;
-
+double m_sample_rate;
 //
 // Called externally to send the next
 // transport frame. It encodes the frame
@@ -27,9 +27,9 @@ void dvb_t_encode_and_modulate( uchar *tp, uchar *dibit )
     len =  dvb_encode_frame( tp, dibit  );
     dvb_t_enc_dibit( dibit, len );
 }
-long double dvb_t_get_sample_rate( void )
+double dvb_t_get_sample_rate( void )
 {
-    long double srate = 8000000.0/7.0;
+    double srate = 8000000.0/7.0;
 
     switch( m_format.chan )
     {
@@ -109,6 +109,7 @@ void dvb_t_init( void )
     // Encode the correct parameters
     dvb_config_get( &info );
     m_format = info.dvbt_fmt;
+    m_sample_rate = dvb_t_get_sample_rate();
     build_tx_sym_tabs();
     dvb_t_build_p_tables();
     init_dvb_t_fft();
