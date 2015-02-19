@@ -148,6 +148,7 @@ int calculate_video_bitrate( void )
         twiddle = 1.0;
         s_rate  = 0;
     }
+    if(info.cap_dev_type == CAP_DEV_TYPE_HD_HAUP) twiddle *= 1.12;
     // Fixed audio bitrate
     s_rate -= 192000.0;
     // SI overhead
