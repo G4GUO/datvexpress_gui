@@ -133,7 +133,7 @@ int calculate_video_bitrate( void )
         // Approx Overhead due to transport packets (NO RS)
         m_raw_bitrate = s_rate;
         m_bits_in_transport_packet = 188.0;
-        s_rate = s_rate*((188.0-5.0)/m_bits_in_transport_packet);
+       s_rate = s_rate*((188.0-5.0)/m_bits_in_transport_packet);
         twiddle = 0.92;
         break;
     case MODE_DVBT:
