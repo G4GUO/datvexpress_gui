@@ -66,6 +66,18 @@ void dvbt_clip( fft_complex *in, int length )
     }
 }
 
+void dvbt_modulate( fft_complex *in, double *taper, int length )
+{
+    // Convert to 16 bit fixed point and apply clipping where required
+
+    for( int i = 0; i < length; i++)
+    {
+        m_sams[i].re = (short)(in[i].re*taper[i]*0x7FFF) | 0x0001;// Mark I channel, LSB is always '1'
+        m_sams[i].im = (short)(in[i].im*taper[i]*0x7FFF) & 0xFFFE;// Mark Q channel, LSB is always '0'
+    }
+    // We should now queue the symbols
+    write_final_tx_queue( m_sams, length);
+}
 void dvbt_modulate( fft_complex *in, int length )
 {
     // Convert to 16 bit fixed point and apply clipping where required

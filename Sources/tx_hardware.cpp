@@ -13,13 +13,19 @@ static double m_tx_rate;
 static sys_config m_config;
 int m_carrier; // If set will transmit only a carrier
 //
-// Transmit a tone at 1/4 the symnol rate on LSB
+// Transmit a tone at 1/4 the symbol rate on LSB
 // This is used for unwanted sideband testing
 //
 
 void transmit_sideband( scmplx *samples, int len )
 {
-    short vals[4] = {0x7FFF, 0x0000, 0x8000, 0x0000};
+    short vals[4] = {
+        (short)0x7FFF,
+        (short)0x0000,
+        (short)0x8000,
+        (short)0x0000
+    };
+
     static int p;
 
     for( int i = 0; i < len ;i++)

@@ -15,7 +15,7 @@
 #define USB_TIMEOUT    1000
 
 #ifdef __LP64__
-#define N_USB_TX_BUFFS 20
+#define N_USB_TX_BUFFS 30
 #else
 #define N_USB_TX_BUFFS 200
 #endif
@@ -103,7 +103,7 @@ void express_enable( void );
 void express_disable( void );
 void express_fpga_reset(void);
 // Program the symbol rate
-int express_set_sr( long double sr );
+int express_set_sr( double sr );
 // Select the channel interpolation rate and filter (of 4)
 void express_set_interp( int interp );
 void express_set_filter( int filter );

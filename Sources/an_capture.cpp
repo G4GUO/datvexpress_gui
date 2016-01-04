@@ -376,33 +376,83 @@ int an_init_codecs( void )
     // New audio packet sent every 24 ms
     m_audio_timestamp_delta = ((0.024*27000000.0)/300.0);
 
-    AVCodec *codec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
-    if(codec != NULL)
-    {
-        m_pC[ENVC]                     = avcodec_alloc_context3(codec);
-        m_pC[ENVC]->bit_rate           = info.video_bitrate;
-        m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;
-        m_pC[ENVC]->width              = m_width;
-        m_pC[ENVC]->height             = m_height;
-        m_pC[ENVC]->gop_size           = 12;
-        m_pC[ENVC]->max_b_frames       = 0;
-        m_pC[ENVC]->me_method          = 5;
-        m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
-        m_pC[ENVC]->time_base          = (AVRational){1,25};
-        m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
-        m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
-        m_pC[ENVC]->thread_count       = 1;
+    //
+    // Video
+    //
+    AVCodec *codec = NULL;
 
-        if(avcodec_open2(m_pC[ENVC], codec, NULL)<0)
-        {
-            loggerf("Unable to open MPEG2 Codec");
+    if(info.sw_codec.video_encoder_type == CODEC_MPEG2){
+        codec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
+        if(codec != NULL){
+            m_pC[ENVC]                     = avcodec_alloc_context3(codec);
+            m_pC[ENVC]->bit_rate           = info.video_bitrate/2;// Not used CBR
+            m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
+            m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
+            m_pC[ENVC]->width              = m_width;
+            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->gop_size           = 12;
+            m_pC[ENVC]->max_b_frames       = 0;
+            m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
+            m_pC[ENVC]->time_base          = (AVRational){1,25};
+            m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
+            m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
+            m_pC[ENVC]->thread_count       = 1;
+        }else{
+            loggerf("MPEG2 Codec not found");
             return -1;
         }
     }
-    else
-    {
-        loggerf("MPEG2 Codec not found");
-        return -1;
+    if(info.sw_codec.video_encoder_type == CODEC_MPEG4){
+        codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+        if(codec != NULL){
+            m_pC[ENVC]                     = avcodec_alloc_context3(codec);
+            m_pC[ENVC]->bit_rate           = info.video_bitrate/2;// Not used CBR
+            m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
+            m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
+            m_pC[ENVC]->width              = m_width;
+            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->gop_size           = 12;
+            m_pC[ENVC]->max_b_frames       = 0;
+            m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
+            m_pC[ENVC]->time_base          = (AVRational){1,25};
+            m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
+            m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
+            m_pC[ENVC]->thread_count       = 1;
+        }else{
+            loggerf("HEVC Codec not found");
+            return -1;
+        }
+    }
+    if(info.sw_codec.video_encoder_type == CODEC_HEVC){
+        codec = avcodec_find_encoder(AV_CODEC_ID_HEVC);
+        if(codec != NULL){
+            m_pC[ENVC]                     = avcodec_alloc_context3(codec);
+            m_pC[ENVC]->bit_rate           = info.video_bitrate/2;// Not used CBR
+            m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
+            m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
+            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
+            m_pC[ENVC]->width              = m_width;
+            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->gop_size           = 12;
+            m_pC[ENVC]->max_b_frames       = 0;
+            m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
+            m_pC[ENVC]->time_base          = (AVRational){1,25};
+            m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
+            m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
+            m_pC[ENVC]->thread_count       = 1;
+        }else{
+            loggerf("HEVC Codec not found");
+            return -1;
+        }
+    }
+    if(avcodec_open2(m_pC[ENVC], codec, NULL)<0){
+            loggerf("Unable to open Video SW Codec");
+            return -1;
     }
     //
     // Audio

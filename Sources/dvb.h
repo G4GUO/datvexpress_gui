@@ -83,7 +83,8 @@
 
 
 // Final buffering queue. these are blocks of samples
-#define TX_BUFFER_LENGTH 512
+#define TX_BUFFER_LENGTH 4096
+//#define TX_BUFFER_LENGTH 1024
 // Delays to get the HAUPAUGE to work
 #define PVR_PCR_DELAY   0.08
 
@@ -120,6 +121,7 @@ int  dvb_conv_encode_frame( uchar *in, uchar *out, int len );
 void dvbs_modulate_init( void );
 void dvb_s_encode_and_modulate( uchar *tp, uchar *dibit );
 void dvbt_modulate( fft_complex *in, int length );
+void dvbt_modulate( fft_complex *in, double *taper, int length );
 void dvbt_clip( fft_complex *in, int length );
 void dvbs2_modulate( scmplx *in, int length );
 void dvb_modulate_init(void);

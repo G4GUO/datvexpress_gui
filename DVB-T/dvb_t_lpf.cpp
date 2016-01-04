@@ -104,7 +104,9 @@ fft_complex *dvbt_filter( fft_complex *in, int length )
     if( length > m_length )
     {
         if( m_out != NULL ) free(m_out);
-        m_out = (fft_complex*)malloc(sizeof(fft_complex)*length);
+        m_length = sizeof(fft_complex)*length;
+        m_out = (fft_complex*)malloc(m_length);
+
     }
 
     for( int i = 0; i < length; i++ )

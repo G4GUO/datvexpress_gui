@@ -19,6 +19,9 @@ using namespace std ;
 // AVCONV is a C application so we need to tell everyone
 // so the linker knows what we are talking about
 //
+#ifdef HAVE_AV_CONFIG_H
+#undef HAVE_AV_CONFIG_H
+#endif
 
 extern "C"
 {

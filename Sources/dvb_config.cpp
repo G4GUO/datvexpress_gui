@@ -101,13 +101,14 @@ void dvb_default_configuration( sys_config *cfg)
     cfg->program_nr       = DEFAULT_PROGRAM_NR;
     strcpy(cfg->video_capture_device_name," ");
     strcpy(cfg->server_ip_address,"192.168.1.64 ");
-    cfg->cap_dev_type               = CAP_DEV_TYPE_NONE;
-    cfg->server_socket_number       = 1958;
-    cfg->video_capture_device_class = DVB_V4L;
-    cfg->video_capture_device_input = 1;
-    cfg->cap_format.video_format    = CAP_AUTO;
-    cfg->video_codec_class          = CODEC_MPEG2;
-    cfg->tx_hardware                = HW_EXPRESS_AUTO;
+    cfg->cap_dev_type                 = CAP_DEV_TYPE_NONE;
+    cfg->server_socket_number         = 1958;
+    cfg->video_capture_device_class   = DVB_V4L;
+    cfg->video_capture_device_input   = 1;
+    cfg->cap_format.video_format      = CAP_AUTO;
+    cfg->sw_codec.video_encoder_type  = CODEC_MPEG2;
+    cfg->sw_codec.audio_encoder_type  = CODEC_13818_3;
+    cfg->tx_hardware                  = HW_EXPRESS_AUTO;
 
     strcpy(cfg->service_provider_name,"HamTV");
     strcpy(cfg->service_name,"Channel 1");

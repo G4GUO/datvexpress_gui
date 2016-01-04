@@ -663,7 +663,9 @@ void dvb_cap_ctl( void )
 
         info.video_bitrate = video_bitrate;
         info.audio_bitrate = 192000;
-        info.video_codec_class = CODEC_MPEG2;
+        info.sw_codec.video_encoder_type = CODEC_MPEG2;
+        info.sw_codec.audio_encoder_type = CODEC_13818_3;
+        info.sw_codec.using_sw_codec = false;
         dvb_config_save_and_update( &info );
     }
 
@@ -735,7 +737,10 @@ void dvb_cap_ctl( void )
         }
         info.video_bitrate = video_bitrate;
         info.audio_bitrate = 192000;
-        info.video_codec_class = CODEC_MPEG4;
+        info.sw_codec.video_encoder_type = CODEC_MPEG4;
+        info.sw_codec.audio_encoder_type = CODEC_LAOS;
+        info.sw_codec.using_sw_codec = false;
+
         dvb_config_save_and_update( &info );
     }
 
@@ -756,7 +761,7 @@ void dvb_cap_ctl( void )
     {
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
-        info.video_codec_class = CODEC_MPEG2;
+        info.sw_codec.using_sw_codec = true;
         dvb_config_save_and_update( &info );
         an_configure_capture_card();
     }
@@ -765,7 +770,7 @@ void dvb_cap_ctl( void )
     {
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
-        info.video_codec_class = CODEC_MPEG2;
+        info.sw_codec.using_sw_codec = true;
         dvb_config_save_and_update( &info );
         an_configure_capture_card();
     }

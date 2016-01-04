@@ -23,6 +23,31 @@ static fftw_plan    m_fftw_16k_plan;
 static fft_complex *m_fft_in;
 static fft_complex *m_fft_out;
 #endif
+//
+// Taper table
+//
+double m_taper[M16KS+(M16KS/4)];
+
+void create_taper_table(int N, int IR, int GI)
+{
+    N         = N*IR;// FFT size
+    int CP    = N/GI;//Cyclic prefix
+    int ALPHA = 32;// Rx Alpha
+    int NT    = 2*(N/(ALPHA*2));//Taper length
+    int idx   = 0;
+    int n     = -NT/2;
+
+    for( int i = 0; i < NT; i++ ){
+        m_taper[idx++] = 0.5*(1.0+cos((M_PI*n)/NT));
+        n++;
+    }
+    for( int i = 0; i < (N+CP)-(2*NT); i++ ){
+        m_taper[idx++] = 1.0;
+    }
+    for( int i = 0; i < NT; i++ ){
+        m_taper[idx++] = m_taper[i];
+    }
+}
 
 // sinc correction coefficients
 int m_N;
@@ -212,12 +237,14 @@ void dvbt_fft_modulate( fft_complex *in, int guard )
 #else
            // Clip the FFT outputs
            dvbt_clip( m_fft_out, size );
+           dvbt_modulate( &m_fft_in[size-guard], guard);
            // Guard
-           out =  dvbt_filter( &m_fft_out[size-guard], guard );
-           dvbt_modulate( out, guard);
+           //out =  dvbt_filter( &m_fft_out[size-guard], guard );
+           //dvbt_modulate( out, guard);
            // Data
-           out =  dvbt_filter( m_fft_out, size );
-           dvbt_modulate( out, size );
+           //out =  dvbt_filter( m_fft_out, size );
+           //dvbt_modulate( out, size );
+           dvbt_modulate( m_fft_in, size );
 #endif
             return;
             break;
@@ -255,13 +282,16 @@ void dvbt_fft_modulate( fft_complex *in, int guard )
     // Clip the FFT outputs
     dvbt_clip( m_fft_out, size );
     // Guard
-//    out =  dvbt_filter( &m_fft_out[size-guard], guard );
-//    dvbt_modulate( out, guard);
-    dvbt_modulate( &m_fft_out[size-guard], guard);
+    //out =  dvbt_filter( &m_fft_out[size-guard], guard );
+    //dvbt_modulate( out, guard);
+
+    //dvbt_modulate( &m_fft_out[size-guard], guard);
+    dvbt_modulate( &m_fft_out[size-guard], &m_taper[0], guard);
     // Data
-//    out =  dvbt_filter( m_fft_out, size );
-//    dvbt_modulate( out, size );
-    dvbt_modulate( m_fft_out, size );
+    //out =  dvbt_filter( m_fft_out, size );
+    //dvbt_modulate( out, size );
+    //dvbt_modulate( m_fft_out, size );
+    dvbt_modulate( m_fft_out, &m_taper[guard], size );
 #endif
 }
 /*
@@ -352,7 +382,28 @@ void init_dvb_t_fft( void )
             break;
         }
     }
+    int GI;
+    switch(m_format.gi)
+    {
+        case GI_132:
+            GI = 32;
+            break;
+        case GI_116:
+            GI = 16;
+            break;
+        case GI_18:
+            GI = 8;
+            break;
+        case GI_14:
+            GI = 4;
+            break;
+        default:
+            GI = 4;
+            break;
+    }
+
     create_correction_table( m_N, m_IR );
+    create_taper_table(m_N, m_IR, GI );
 }
 void deinit_dvb_t_fft( void )
 {

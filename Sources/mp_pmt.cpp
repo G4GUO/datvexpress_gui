@@ -149,22 +149,28 @@ void pmt_fmt( void )
 {
     sys_config cfg;
     dvb_config_get( &cfg );
+    int video,audio;
 
+    //ISO 13818-2 Video (02)
+    //ISO 13818-3 Audio (04)
+    //ISO 11172-3 Audio (03)
+    //ISO 13818-7 Video MPEG4
+    //ISO 14496-3 Audio LATM/LAOS AAC?
 
-    if( cfg.video_codec_class == CODEC_MPEG2 )
-    {
-        //ISO 13818-2 Video (02)
-        //ISO 13818-3 Audio (04)
-        //ISO 11172-3 Audio (03)
-        pmt_fmt( 0x02, 0x04 );
-    }
+    // Default MPEG2 video and 13810 Audio
+    video = 0x02;
+    audio = 0x04;
 
-    if( cfg.video_codec_class == CODEC_MPEG4 )
-    {
-        //ISO 13818-7 Video MPEG4
-        //ISO 14496-3 Audio LATM/LAOS AAC?
-        pmt_fmt( 0x10, 0x11 );
-    }
+    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG2 ) video = 0x02;
+    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG4 ) video = 0x10;
+    if( cfg.sw_codec.video_encoder_type == CODEC_HEVC  ) video = 0x27;// ?
+
+    if( cfg.sw_codec.audio_encoder_type == CODEC_11172_3 ) audio = 0x03;
+    if( cfg.sw_codec.audio_encoder_type == CODEC_13818_3 ) audio = 0x04;
+    if( cfg.sw_codec.audio_encoder_type == CODEC_LAOS )    audio = 0x11;
+
+    pmt_fmt( video, audio );
+
 }
 //
 // Send a PMT transport packet via dvb encoder

@@ -12,7 +12,6 @@ TARGET = DATV-Express
 TEMPLATE = app
 
 HEADERS  += mainwindow.h \
-    DVB-C/dvb_c.h \
     Sources/an_capture.h \
     Sources/si570.h \
     Sources/dvb_buffer.h \
@@ -32,9 +31,8 @@ unix{
 }
 
 LIBS += -lfftw -lpthread
-LIBS += -lavdevice -lavresample -lavformat -lavcodec -lavutil -lswscale -lmp3lame -lavfilter -lz -lrt -lbz2
+LIBS += -lavdevice -lavfilter -lswresample -lavformat -lpostproc -lavutil -lswscale -lmp3lame -lz -lrt -lavcodec -llzma -lx264 -lx265  -lva -lbz2
 LIBS += -lasound
-
 INCLUDEPATH += Sources
 
 SOURCES += main.cpp \
@@ -97,13 +95,11 @@ SOURCES += main.cpp \
     DVB-S/dvb_interleave.cpp \
     Sources/dvb_log.cpp \
     Sources/dvb_udp.cpp \
-    DVB-C/dvb_c_tables.cpp \
     Sources/mp_pcr.cpp \
     Sources/tp_logger.cpp \
     Sources/mp_scr_parse.cpp \
     Sources/dvb_tx_transport_flow.cpp \
     Sources/dvb_pes_process.cpp \
-    DVB-C/dvb_c_modulate.cpp \
     Sources/an_capture.cpp \
     Sources/mp_null.cpp \
     Sources/si570.cpp \

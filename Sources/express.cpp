@@ -610,7 +610,7 @@ void express_set_freq( double freq )
 //
 // Routines that affect the FPGA registers
 //
-int express_set_sr( long double sr )
+int express_set_sr( double sr )
 {
     int64_t val;
     int irate,sr_threshold;
@@ -619,9 +619,9 @@ int express_set_sr( long double sr )
     if( sr == 0 ) return -1;
     if( m_express_status != EXP_OK ) return -1;
 
-    sr = sr * 32;// 4*8 clock rate
 
     irate = IRATE8;
+
     if(m_si570_fitted == true )
     {
         sr_threshold = SR_THRESHOLD_SI570_HZ;
@@ -630,24 +630,25 @@ int express_set_sr( long double sr )
     {
         sr_threshold = SR_THRESHOLD_HZ;
     }
-    if( sr < sr_threshold )
+    if( sr < sr_threshold/32 )
     {
         // We can use x8 interpolator
         irate = IRATE8;
+        sr = sr * 32;// 4*8 clock rate
     }
     else
     {
         // We can use x4 interpolator
-        sr = sr / 2;
-        if( sr < sr_threshold )
+        if( sr < sr_threshold/16 )
         {
             irate = IRATE4;
+            sr = sr * 16;// 4*4 clock rate
         }
         else
         {
             // We must use the x2 rate interpolator
-            sr = sr/2;
             irate = IRATE2;
+            sr = sr * 8;// 2*4 clock rate
         }
     }
     express_set_interp( irate );
@@ -659,9 +660,10 @@ int express_set_sr( long double sr )
     }
     // We need to set the internal SR gen to something
 
-    sr = sr/400000000.0;//400 MHz;
-    // Turn into a 64 bit number
-    val = sr*0xFFFFFFFFFFFFFFFF;
+    // Fraction of a 400 Mhz clock turned into a 64 bit number
+    // sr = sr*0xFFFFFFFFFFFFFFFF/400000000.0;//400 MHz;
+    val = sr*46116860184.2738790375*0.9997660298;
+
     // Send it
     msg[0]  = FPGA_ADD | I2C_WR;
 
