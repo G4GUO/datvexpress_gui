@@ -49,9 +49,9 @@ void CaptureDialog::initial_parameter_display(void)
 
 void CaptureDialog::on_buttonBox_accepted()
 {
-    if(ui->radioButtonPal720x576->isChecked() == true ) m_cfg.cap_format.video_format = CAP_PAL;
+    if(ui->radioButtonPal720x576->isChecked() == true ) m_cfg.cap_format.video_format  = CAP_PAL;
     if(ui->radioButtonNtsc720x480->isChecked() == true ) m_cfg.cap_format.video_format = CAP_NTSC;
-    if(ui->radioButtonAuto->isChecked()    == true ) m_cfg.cap_format.video_format = CAP_AUTO;
+    if(ui->radioButtonAuto->isChecked()    == true ) m_cfg.cap_format.video_format     = CAP_AUTO;
 
     if(m_cfg.sw_codec.using_sw_codec == true){
         if(ui->radioButtonMPEG2->isChecked() == true) m_cfg.sw_codec.video_encoder_type = CODEC_MPEG2;

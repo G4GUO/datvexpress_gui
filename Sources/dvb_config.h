@@ -37,7 +37,8 @@ typedef enum{
     CAP_DEV_TYPE_SD_HAUP,
     CAP_DEV_TYPE_HD_HAUP,
     CAP_DEV_TYPE_SA7134,
-    CAP_DEV_TYPE_SA7113
+    CAP_DEV_TYPE_SA7113,
+    CAP_DEV_TYPE_SONIXJ
 }CapDevType;
 
 // Capture device configuration
@@ -59,6 +60,7 @@ typedef struct{
     u_int32_t  video_capture_format;
     VideoCodec video_encoder_type;
     bool using_sw_codec;
+    int aspect[2];
 }CodecInfo;
 
 #define N_SR_MEMS 12

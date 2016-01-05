@@ -293,9 +293,9 @@ CapDevType get_video_device_type_from_driver( const char *driver )
     {
         type = CAP_DEV_TYPE_SA7113;
     }
-    if(strncmp((const char*)driver,"sonixj",10) == 0)
+    if(strncmp((const char*)driver,"sonixj",5) == 0)
     {
-        type = CAP_DEV_TYPE_NONE;
+        type = CAP_DEV_TYPE_SONIXJ;
     }
 
     if(strncmp((const char*)driver,"hdpvr",5) == 0)
@@ -762,8 +762,10 @@ void dvb_cap_ctl( void )
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
         info.sw_codec.using_sw_codec = true;
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
         dvb_config_save_and_update( &info );
-        an_configure_capture_card();
+        an_configure_capture_card(CAP_DEV_TYPE_SA7134);
     }
 
     if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 )
@@ -771,18 +773,37 @@ void dvb_cap_ctl( void )
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
         info.sw_codec.using_sw_codec = true;
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
         dvb_config_save_and_update( &info );
-        an_configure_capture_card();
+        an_configure_capture_card(CAP_DEV_TYPE_SA7113);
+    }
+
+    if(info.cap_dev_type == CAP_DEV_TYPE_SONIXJ )
+    {
+        info.video_bitrate     = calculate_video_bitrate();
+        info.audio_bitrate     = 192000;
+        info.sw_codec.using_sw_codec = true;
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
+        dvb_config_save_and_update( &info );
+        an_configure_capture_card(CAP_DEV_TYPE_SONIXJ);
     }
 
     if(info.cap_format.video_format == CAP_PAL )
     {
         dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
     }
-    if(info.cap_format.video_format == CAP_PAL )
+
+    if(info.cap_format.video_format == CAP_NTSC )
     {
         dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_NTSC );
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
     }
+
 #endif
 
     m_cap_update = false;

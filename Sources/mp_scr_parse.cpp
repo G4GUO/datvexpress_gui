@@ -6,6 +6,7 @@
 
 #define MPEG_CLK     27000000
 #define PCR_DELAY    ((int64_t)(PVR_PCR_DELAY*27000000))
+#define PCR_DELAY_SW ((int64_t)(SW_PCR_DELAY*27000000))
 #define PCR_ERROR    270000000
 #define PCR_INTERVAL 945000
 
@@ -503,7 +504,7 @@ void force_pcr(int64_t ts)
     {
         pad_stream();
     }
-    if((m_pcr_clk - PCR_DELAY) > (ts*300)) m_pcr_sync = 1;
+    if((m_pcr_clk - PCR_DELAY_SW) > (ts*300)) m_pcr_sync = 1;
 }
 //
 // We use the audio packet pts values to retain sync

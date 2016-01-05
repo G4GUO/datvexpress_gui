@@ -27,7 +27,7 @@ extern snd_pcm_t *m_audio_handle;
 static struct SwsContext *m_sws;
 static AVPacket        m_avpkt[4];
 static AVCodecContext *m_pC[4];
-static AVPicture m_PictureVideoSrc;
+static AVFrame *m_PictureVideoSrc;
 static AVFrame *m_pFrameVideo;
 static AVFrame *m_pFrameAudio;
 static uint8_t m_eb[2][INBUF_SIZE];
@@ -42,7 +42,7 @@ static pthread_mutex_t mutex;
 static pthread_t an_thread[2];
 static int m_video_flag;
 static int m_audio_flag;
-// Picture withd and height
+// Picture width and height
 static int m_height;
 static int m_width;
 
@@ -63,11 +63,14 @@ void an_set_image_size( AVPixelFormat capfmt  )
     m_pFrameVideo->width  = m_width;
     m_pFrameVideo->height = m_height;
     m_pFrameVideo->format = AV_PIX_FMT_YUV420P;
+    av_frame_get_buffer(m_pFrameVideo,6);
 
-    // This is the 'Picture' that will be passed to the encoder
-    avpicture_alloc((AVPicture*) m_pFrameVideo, AV_PIX_FMT_YUV420P, m_width, m_height );
-    // Capture Picture if image conversion is required
-    avpicture_alloc( &m_PictureVideoSrc, capfmt, m_width, m_height );
+    m_PictureVideoSrc         = av_frame_alloc();
+    m_PictureVideoSrc->width  = m_width;
+    m_PictureVideoSrc->height = m_height;
+    m_PictureVideoSrc->format = AV_PIX_FMT_YUV420P;
+    av_frame_get_buffer(m_PictureVideoSrc,6);
+
 }
 
 void an_set_audio_size( void  )
@@ -177,14 +180,7 @@ void *an_video_io_capturing_thread( void *arg )
     {
         val = read( m_i_fd, b, VIDEO_CAPTURE_SIZE );
 //        printf("VAL %d\n",val);
-        avpicture_fill((AVPicture*)m_pFrameVideo, b, AV_PIX_FMT_YUV420P, m_width, m_height);
-     //   m_pFrameVideo->data[0] = b;
-     //   m_pFrameVideo->data[1] = m_pFrameVideo->data[0] + size;
-     //   m_pFrameVideo->data[2] = m_pFrameVideo->data[1] + size/4;
-     //   m_pFrameVideo->linesize[0] = width;
-     //   m_pFrameVideo->linesize[1] = width/2;
-     //   m_pFrameVideo->linesize[2] = width/2;
-
+        av_image_fill_arrays(m_pFrameVideo->data, m_pFrameVideo->linesize, b, AV_PIX_FMT_YUV420P, m_width, m_height,6);
       //  an_dummy_frame( m_pFrameVideo, PAL_HEIGHT_CAPTURE, PAL_WIDTH_CAPTURE );
         an_capture_video();
       //  an_dummy_frame( m_pFrameVideo, PAL_HEIGHT_CAPTURE, PAL_WIDTH_CAPTURE );
@@ -229,12 +225,14 @@ void *an_video_mmap_capturing_thread( void *arg )
                 if( m_sws == NULL )
                 {
                     // No conversion needed
-                    avpicture_fill((AVPicture*)m_pFrameVideo, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUV420P, m_width, m_height);
+                    av_image_fill_arrays(m_pFrameVideo->data,m_pFrameVideo->linesize,(uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUV420P, m_pFrameVideo->width, m_pFrameVideo->height,6);
+                    //avpicture_fill((AVPicture*)m_pFrameVideo, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUV420P, m_width, m_height);
                 }
                 else
                 {
-                    avpicture_fill( &m_PictureVideoSrc, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUYV422, m_width, m_height);
-                    sws_scale( m_sws, m_PictureVideoSrc.data, m_PictureVideoSrc.linesize, 0, m_height,
+                    av_image_fill_arrays(m_pFrameVideo->data,m_pFrameVideo->linesize,(uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUYV422, m_pFrameVideo->width, m_pFrameVideo->height,6);
+                    //avpicture_fill( &m_PictureVideoSrc, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUYV422, m_width, m_height);
+                    sws_scale( m_sws, m_PictureVideoSrc->data, m_PictureVideoSrc->linesize, 0, m_height,
                                       m_pFrameVideo->data,    m_pFrameVideo->linesize);
                 }
                 an_capture_video();
@@ -358,7 +356,7 @@ void an_start_streaming_capture(int fd)
 //
 // Initilaise all the software codecs
 //
-int an_init_codecs( void )
+int an_init_codecs( v4l2_format  fmt )
 {
     sys_config info;
 
@@ -385,18 +383,19 @@ int an_init_codecs( void )
         codec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
         if(codec != NULL){
             m_pC[ENVC]                     = avcodec_alloc_context3(codec);
-            m_pC[ENVC]->bit_rate           = info.video_bitrate/2;// Not used CBR
+            m_pC[ENVC]->bit_rate           = info.video_bitrate;// Not used CBR
             m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
-            m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
-            m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
-            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
-            m_pC[ENVC]->width              = m_width;
-            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->rc_max_rate        = info.video_bitrate;
+            m_pC[ENVC]->rc_min_rate        = info.video_bitrate;
+            m_pC[ENVC]->rc_buffer_size     = (info.video_bitrate)/3;
+            m_pC[ENVC]->width              = fmt.fmt.pix.width;
+            m_pC[ENVC]->height             = fmt.fmt.pix.height;
+            m_pC[ENVC]->sample_aspect_ratio = (AVRational){info.sw_codec.aspect[0],info.sw_codec.aspect[1]};
             m_pC[ENVC]->gop_size           = 12;
             m_pC[ENVC]->max_b_frames       = 0;
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
             m_pC[ENVC]->time_base          = (AVRational){1,25};
-            m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
+            m_pC[ENVC]->ticks_per_frame    = 1;// MPEG2 & 4 (should be 2)
             m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
             m_pC[ENVC]->thread_count       = 1;
         }else{
@@ -408,18 +407,18 @@ int an_init_codecs( void )
         codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
         if(codec != NULL){
             m_pC[ENVC]                     = avcodec_alloc_context3(codec);
-            m_pC[ENVC]->bit_rate           = info.video_bitrate/2;// Not used CBR
+            m_pC[ENVC]->bit_rate           = info.video_bitrate;// Not used CBR
             m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
-            m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
-            m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
-            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
-            m_pC[ENVC]->width              = m_width;
-            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->rc_max_rate        = info.video_bitrate;
+            m_pC[ENVC]->rc_min_rate        = info.video_bitrate;
+            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/3;
+            m_pC[ENVC]->width              = fmt.fmt.pix.width;
+            m_pC[ENVC]->height             = fmt.fmt.pix.height;
             m_pC[ENVC]->gop_size           = 12;
             m_pC[ENVC]->max_b_frames       = 0;
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
             m_pC[ENVC]->time_base          = (AVRational){1,25};
-            m_pC[ENVC]->ticks_per_frame    = 2;// MPEG2 & 4
+            m_pC[ENVC]->ticks_per_frame    = 1;// MPEG2 & 4
             m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
             m_pC[ENVC]->thread_count       = 1;
         }else{
@@ -435,9 +434,9 @@ int an_init_codecs( void )
             m_pC[ENVC]->bit_rate_tolerance = info.video_bitrate/10;// Not used CBR
             m_pC[ENVC]->rc_max_rate        = info.video_bitrate/2;
             m_pC[ENVC]->rc_min_rate        = info.video_bitrate/2;
-            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/4;
-            m_pC[ENVC]->width              = m_width;
-            m_pC[ENVC]->height             = m_height;
+            m_pC[ENVC]->rc_buffer_size     = info.video_bitrate*3/4;
+            m_pC[ENVC]->width              = fmt.fmt.pix.width;
+            m_pC[ENVC]->height             = fmt.fmt.pix.height;
             m_pC[ENVC]->gop_size           = 12;
             m_pC[ENVC]->max_b_frames       = 0;
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
@@ -517,14 +516,14 @@ void an_setup_audio_capturing( void )
 //
 // Set up both the audio and video capturing on the card
 //
-void an_configure_capture_card( void )
+
+void an_configure_capture_card( int dev )
 {
     struct v4l2_cropcap cropcap;
     struct v4l2_crop    crop;
     struct v4l2_format  fmt;
     sys_config info;
     int input;
-    u32 pix_fmt;
 
     dvb_config_get( &info );
 
@@ -547,26 +546,29 @@ void an_configure_capture_card( void )
     //
     // Analogue Video capture
     //
-    pix_fmt = V4L2_PIX_FMT_YUV420;
     m_sws   = NULL;
 
-    fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.width       = m_width;
-    fmt.fmt.pix.height      = m_height;
-    fmt.fmt.pix.pixelformat = pix_fmt;
-    fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
-
-    if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
-    {
-        an_set_image_size( AV_PIX_FMT_YUV420P );
-    }
-    else
-    {
-        pix_fmt = V4L2_PIX_FMT_YUYV; // capture format
+    if( dev == CAP_DEV_TYPE_SA7134 ){
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         fmt.fmt.pix.width       = m_width;
         fmt.fmt.pix.height      = m_height;
-        fmt.fmt.pix.pixelformat = pix_fmt;
+        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+
+        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
+        {
+            an_set_image_size( AV_PIX_FMT_YUV420P );
+        }
+        else{
+            logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
+        }
+    }
+
+    if( dev == CAP_DEV_TYPE_SA7113 ){
+        fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        fmt.fmt.pix.width       = m_width;
+        fmt.fmt.pix.height      = m_height;
+        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
         if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
         {
@@ -576,10 +578,13 @@ void an_configure_capture_card( void )
                                     SWS_BICUBIC, NULL,NULL, NULL);
             an_set_image_size( AV_PIX_FMT_YUYV422 );
         }
-        else
-        {
+        else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
         }
+    }
+
+    if( dev == CAP_DEV_TYPE_SONIXJ ){
+
     }
 
     if(ioctl(m_i_fd, VIDIOC_G_FMT, &fmt)<0 )
@@ -629,7 +634,7 @@ void an_configure_capture_card( void )
     snd_pcm_hw_params_free(hw_params);
     r = snd_pcm_prepare(m_audio_handle);
 
-    an_init_codecs();
+    an_init_codecs( fmt );
     m_capturing = true;
     an_setup_video_capturing( m_i_fd );
     an_setup_audio_capturing();

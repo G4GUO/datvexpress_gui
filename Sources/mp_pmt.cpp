@@ -151,19 +151,21 @@ void pmt_fmt( void )
     dvb_config_get( &cfg );
     int video,audio;
 
-    //ISO 13818-2 Video (02)
-    //ISO 13818-3 Audio (04)
-    //ISO 11172-3 Audio (03)
-    //ISO 13818-7 Video MPEG4
-    //ISO 14496-3 Audio LATM/LAOS AAC?
+    //ISO 13818-2 MPEG2 Video (0x02)
+    //ISO 13818-7 MPEG4 Video (0x10)
+    //ISO 13818-7 HEVC  Video (0x24)
+
+    //ISO 13818-3 MPEG2 1/2 rate Audio (0x04)
+    //ISO 11172-3 MPEG1 Audio (0x03)
+    //ISO 14496-3 MPEG4 LAOS  (0x11)
 
     // Default MPEG2 video and 13810 Audio
     video = 0x02;
     audio = 0x04;
 
-    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG2 ) video = 0x02;
-    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG4 ) video = 0x10;
-    if( cfg.sw_codec.video_encoder_type == CODEC_HEVC  ) video = 0x27;// ?
+    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG2 )   video = 0x02;
+    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG4 )   video = 0x10;
+    if( cfg.sw_codec.video_encoder_type == CODEC_HEVC  )   video = 0x24;
 
     if( cfg.sw_codec.audio_encoder_type == CODEC_11172_3 ) audio = 0x03;
     if( cfg.sw_codec.audio_encoder_type == CODEC_13818_3 ) audio = 0x04;

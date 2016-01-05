@@ -45,7 +45,7 @@ extern "C"
 #endif
 
 // Set the capture size of the image
-void an_configure_capture_card( void );
+void an_configure_capture_card( int dev );
 // Initialise this module
 int an_init( v4l2_format *fmt );
 // capture an image and sound

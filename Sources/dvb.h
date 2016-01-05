@@ -87,6 +87,8 @@
 //#define TX_BUFFER_LENGTH 1024
 // Delays to get the HAUPAUGE to work
 #define PVR_PCR_DELAY   0.08
+// Software codec delay
+#define SW_PCR_DELAY   0.015
 
 // PTT status
 #define DVB_RECEIVING           0
