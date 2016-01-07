@@ -298,6 +298,11 @@ CapDevType get_video_device_type_from_driver( const char *driver )
         type = CAP_DEV_TYPE_SONIXJ;
     }
 
+    if(strncmp((const char*)driver,"uvcvideo",5) == 0)
+    {
+        type = CAP_DEV_TYPE_UVCVIDEO;
+    }
+
     if(strncmp((const char*)driver,"hdpvr",5) == 0)
     {
         type = CAP_DEV_TYPE_HD_HAUP;
@@ -490,7 +495,6 @@ void populate_audio_capture_list( CaptureCardList *list )
     }
 }
 #endif
-
 //
 // Program or re-program the capture device
 // This is semaphore protected.
@@ -513,18 +517,15 @@ void dvb_cap_ctl( void )
     // Get the capabilities
     //
     struct v4l2_capability cap;
-    if( ioctl(	m_i_fd,VIDIOC_QUERYCAP, &cap) < 0 )
-    {
+    if( ioctl(	m_i_fd,VIDIOC_QUERYCAP, &cap) < 0 ){
         logger("CAP Query Error");
     }
-    else
-    {
+    else{
         loggerf("Driver: %s, Card: %s, Device: %s",cap.driver,cap.card,m_v4l_capture_device);
 //            if( cap.capabilities & V4L2_CAP_READWRITE) loggerf("R/W supported");
     }
 
-    if( info.video_capture_device_class == DVB_FIREWIRE  )
-    {
+    if( info.video_capture_device_class == DVB_FIREWIRE  ){
         // Set up the transcoder
         //transcoder.ConfigureOutput( info.video_bitrate, 64000, 720, 576 );
         info.video_bitrate = video_bitrate;
@@ -543,8 +544,7 @@ void dvb_cap_ctl( void )
         // Set priority
         v4l2_priority priority = V4L2_PRIORITY_RECORD;
 
-        if( ioctl( m_i_fd, VIDIOC_S_PRIORITY, &priority ) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_PRIORITY, &priority ) < 0 ){
             logger("CAP Error V4L2_PRIORITY_RECORD");
         }
 
@@ -554,47 +554,41 @@ void dvb_cap_ctl( void )
         // v4l2-ctl -c stream_type=0 #MPEG-2 DVD = 3, MPEG-2 Program Stream=0
         ctl.id    = V4L2_CID_MPEG_STREAM_TYPE;
         ctl.value = V4L2_MPEG_STREAM_TYPE_MPEG2_PS;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_STREAM_TYPE");
         }
 
         // Sample frequency 48K
         ctl.id    = V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ;
         ctl.value = V4L2_MPEG_AUDIO_SAMPLING_FREQ_48000;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ");
         }
 
         // v4l2-ctl -c audio_stereo_mode=0 		#Stereo
         ctl.id    = V4L2_CID_MPEG_AUDIO_MODE;
         ctl.value = V4L2_MPEG_AUDIO_MODE_STEREO;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
                 logger("CAP Error V4L2_CID_MPEG_AUDIO_MODE");
         }
 
         // v4l2-ctl -c audio_layer_ii_bitrate=9 		#192Kbps
         ctl.id    = V4L2_CID_MPEG_AUDIO_L2_BITRATE;
         ctl.value = V4L2_MPEG_AUDIO_L2_BITRATE_192K;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_AUDIO_L2_BITRATE");
         }
 
         ctl.id       = V4L2_CID_MPEG_AUDIO_ENCODING;
         ctl.value    = V4L2_MPEG_AUDIO_ENCODING_LAYER_2;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_AUDIO_ENCODING");
         }
 
         // v4l2-ctl -c video_bitrate=3100000		#Set Video Bitrate
         ctl.id    = V4L2_CID_MPEG_VIDEO_BITRATE;
         ctl.value = video_bitrate;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE");
         }
 
@@ -603,29 +597,25 @@ void dvb_cap_ctl( void )
         // v4l2-ctl -c video_bitrate_mode=1		#COnstant Bitrate = 1, Variable Bitrate = 0
         ctl.id    = V4L2_CID_MPEG_VIDEO_BITRATE_MODE;
         ctl.value = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE_MODE");
         }
 
         // v4l2-ctl -c video_aspect=1			#4:3
         ctl.id    = V4L2_CID_MPEG_VIDEO_ASPECT;
         ctl.value = V4L2_MPEG_VIDEO_ASPECT_4x3;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_VIDEO_ASPECT");
         }
 
         ctl.id    = V4L2_CID_MPEG_VIDEO_GOP_SIZE;
         ctl.value = 10;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_VIDEO_GOP_SIZE");
         }
         ctl.id    = V4L2_CID_MPEG_VIDEO_B_FRAMES;
         ctl.value = 1;
-        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_CTRL, &ctl) < 0 ){
             loggerf("CAP Error V4L2_CID_MPEG_VIDEO_B_FRAMES");
         }
 
@@ -634,8 +624,7 @@ void dvb_cap_ctl( void )
 //	input = V4L2_INPUT_TYPE_CAMERA;
         input = info.video_capture_device_input;
 
-        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 ){
             loggerf("CAP Error VIDIOC_S_INPUT %d",input);
         }
 
@@ -646,15 +635,13 @@ void dvb_cap_ctl( void )
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
         fmt.fmt.pix.width       = 720;
 
-        if(info.cap_format.video_format == CAP_PAL )
-        {
+        if(info.cap_format.video_format == CAP_PAL ){
             fmt.fmt.pix.height = 576;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
             dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
         }
-        if(info.cap_format.video_format == CAP_NTSC )
-        {
+        if(info.cap_format.video_format == CAP_NTSC ){
             fmt.fmt.pix.height = 480;
             if( ioctl( m_i_fd, VIDIOC_S_FMT, &fmt ) < 0 )
                 loggerf("Video format error %d",fmt.fmt.pix.height);
@@ -673,8 +660,7 @@ void dvb_cap_ctl( void )
 // HD PVR
 ///////////////////
 
-    if( info.cap_dev_type == CAP_DEV_TYPE_HD_HAUP )
-    {
+    if( info.cap_dev_type == CAP_DEV_TYPE_HD_HAUP ){
         v4l2_ext_controls ec;
         v4l2_ext_control  ct[6];
         memset( &ec,0,sizeof(v4l2_ext_controls));
@@ -707,8 +693,7 @@ void dvb_cap_ctl( void )
 //        ct[5].id       = V4L2_CID_MPEG_STREAM_PID_PCR;
 //        ct[5].value    = info.pcr_pid;
 
-        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec )<0)
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec )<0){
             logger("CAP Error Extended V4L2_CID_MPEG_VIDEO_CONFIGURATION");
         }
         video_bitrate = ct[0].value;
@@ -721,8 +706,7 @@ void dvb_cap_ctl( void )
         ct[0].id    = V4L2_CID_MPEG_VIDEO_BITRATE_MODE;
         ct[0].value = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
 
-        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_EXT_CTRLS, &ec) < 0 ){
             logger("CAP Error V4L2_CID_MPEG_VIDEO_BITRATE_MODE");
         }
 
@@ -731,8 +715,7 @@ void dvb_cap_ctl( void )
          // 0 = component, 1 = S-Video, 2 = Composite
 
         input = info.video_capture_device_input;
-        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 )
-        {
+        if( ioctl( m_i_fd, VIDIOC_S_INPUT, &input) < 0 ){
             logger("CAP Error VIDIOC_S_INPUT");
         }
         info.video_bitrate = video_bitrate;
@@ -744,8 +727,7 @@ void dvb_cap_ctl( void )
         dvb_config_save_and_update( &info );
     }
 
-    if( info.video_capture_device_class == DVB_UDP_TS )
-    {
+    if( info.video_capture_device_class == DVB_UDP_TS ){
        // Do nothing
         info.video_bitrate = video_bitrate;
         info.audio_bitrate = 192000;
@@ -757,8 +739,7 @@ void dvb_cap_ctl( void )
 ///////////////////
 #ifdef _USE_SW_CODECS
 
-    if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 )
-    {
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7134 ){
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
         info.sw_codec.using_sw_codec = true;
@@ -768,8 +749,7 @@ void dvb_cap_ctl( void )
         an_configure_capture_card(CAP_DEV_TYPE_SA7134);
     }
 
-    if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 )
-    {
+    if(info.cap_dev_type == CAP_DEV_TYPE_SA7113 ){
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
         info.sw_codec.using_sw_codec = true;
@@ -779,8 +759,7 @@ void dvb_cap_ctl( void )
         an_configure_capture_card(CAP_DEV_TYPE_SA7113);
     }
 
-    if(info.cap_dev_type == CAP_DEV_TYPE_SONIXJ )
-    {
+    if(info.cap_dev_type == CAP_DEV_TYPE_SONIXJ ){
         info.video_bitrate     = calculate_video_bitrate();
         info.audio_bitrate     = 192000;
         info.sw_codec.using_sw_codec = true;
@@ -789,16 +768,23 @@ void dvb_cap_ctl( void )
         dvb_config_save_and_update( &info );
         an_configure_capture_card(CAP_DEV_TYPE_SONIXJ);
     }
+    if(info.cap_dev_type == CAP_DEV_TYPE_UVCVIDEO ){
+        info.video_bitrate     = calculate_video_bitrate();
+        info.audio_bitrate     = 192000;
+        info.sw_codec.using_sw_codec = true;
+        info.sw_codec.aspect[0] = 4;
+        info.sw_codec.aspect[1] = 3;
+        dvb_config_save_and_update( &info );
+        an_configure_capture_card(CAP_DEV_TYPE_UVCVIDEO);
+    }
 
-    if(info.cap_format.video_format == CAP_PAL )
-    {
-        dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
+    if(info.cap_format.video_format == CAP_PAL ){
+       // dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
         info.sw_codec.aspect[0] = 4;
         info.sw_codec.aspect[1] = 3;
     }
 
-    if(info.cap_format.video_format == CAP_NTSC )
-    {
+    if(info.cap_format.video_format == CAP_NTSC ){
         dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_NTSC );
         info.sw_codec.aspect[0] = 4;
         info.sw_codec.aspect[1] = 3;

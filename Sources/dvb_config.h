@@ -38,7 +38,8 @@ typedef enum{
     CAP_DEV_TYPE_HD_HAUP,
     CAP_DEV_TYPE_SA7134,
     CAP_DEV_TYPE_SA7113,
-    CAP_DEV_TYPE_SONIXJ
+    CAP_DEV_TYPE_SONIXJ,
+    CAP_DEV_TYPE_UVCVIDEO
 }CapDevType;
 
 // Capture device configuration

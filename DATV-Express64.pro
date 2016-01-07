@@ -19,7 +19,8 @@ HEADERS  += mainwindow.h \
     Sources/mp_config.h \
     DVB-T/dvb_t_sym.h \
     capturedialog.h \
-    Sources/dvb_options.h
+    Sources/dvb_options.h \
+    Blackmagic/include/DeckLinkAPI.h
 
 FORMS    += mainwindow.ui \
             Capturedialog.ui
@@ -30,10 +31,14 @@ unix{
     PKGCONFIG += libavutil
 }
 
-LIBS += -lfftw -lpthread
+LIBS += -lfftw -lpthread -ldl
+
+# Comment out next 2 lines if not compiling for sofware codecs
 LIBS += -lavdevice -lavfilter -lswresample -lavformat -lpostproc -lavutil -lswscale -lmp3lame -lz -lrt -lavcodec -llzma -lx264 -lx265  -lva -lbz2
 LIBS += -lasound
+
 INCLUDEPATH += Sources
+INCLUDEPATH += Blackmagic/include
 
 SOURCES += main.cpp \
     mainwindow.cpp \
@@ -105,7 +110,10 @@ SOURCES += main.cpp \
     Sources/si570.cpp \
     DVB-T/dvb_t_lpf.cpp \
     Sources/dvb_buffer.cpp \
-    capturedialog.cpp
+    capturedialog.cpp \
+    Blackmagic/include/DeckLinkAPIDispatch.cpp \
+    Blackmagic/Capture.cpp \
+    Blackmagic/Config.cpp
 HEADERS += mainwindow.h \
     Sources/dvb_gui_if.h \
     Sources/dvb_config.h \
