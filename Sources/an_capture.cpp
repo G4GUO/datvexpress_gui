@@ -14,6 +14,7 @@
 #include "mp_tp.h"
 #ifdef _USE_SW_CODECS
 #include "an_capture.h"
+#include "bm_mod_interface.h"
 
 #define ENVC 0
 #define ENAC 1
@@ -45,6 +46,7 @@ static int m_audio_flag;
 // Picture width and height
 static int m_height;
 static int m_width;
+static bool m_use_format_conversion;
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -56,20 +58,21 @@ struct buffer
 static struct buffer *m_buffers;
 static unsigned int   m_n_buffers;
 
-void an_set_image_size( AVPixelFormat capfmt  )
+void an_set_image_buffer_sizes( AVPixelFormat src_fmt  )
 {
-    // Video Encoder
+    // Video Encoder frame
     m_pFrameVideo         = av_frame_alloc();
     m_pFrameVideo->width  = m_width;
     m_pFrameVideo->height = m_height;
     m_pFrameVideo->format = AV_PIX_FMT_YUV420P;
     av_frame_get_buffer(m_pFrameVideo,6);
 
+    // Capture frame
     m_pFrameVideoSrc         = av_frame_alloc();
     m_pFrameVideoSrc->width  = m_width;
     m_pFrameVideoSrc->height = m_height;
-    m_pFrameVideoSrc->format = AV_PIX_FMT_YUV420P;
-    av_frame_get_buffer(m_pFrameVideoSrc,6);
+    m_pFrameVideoSrc->format = src_fmt;
+    av_frame_get_buffer(m_pFrameVideoSrc,8);
 
 }
 
@@ -158,6 +161,49 @@ void an_dummy_frame(AVFrame *frame, int h, int w )
     frame->pts = i++;
 
 }
+void an_process_captured_video_buffer( uint8_t *b, AVPixelFormat fmt){
+
+    if( fmt == AV_PIX_FMT_YUV420P )
+    {
+        // No conversion needed
+        av_image_fill_arrays(m_pFrameVideo->data,m_pFrameVideo->linesize,b,fmt, m_pFrameVideo->width, m_pFrameVideo->height,6);
+    }
+    else
+    {
+        av_image_fill_arrays( m_pFrameVideoSrc->data,m_pFrameVideoSrc->linesize, b, fmt, m_pFrameVideoSrc->width, m_pFrameVideoSrc->height,6);
+        sws_scale( m_sws, m_pFrameVideoSrc->data, m_pFrameVideoSrc->linesize, 0, m_pFrameVideoSrc->height,
+                          m_pFrameVideo->data,    m_pFrameVideo->linesize);
+    }
+    an_capture_video();
+}
+//
+// Capture analoge sound
+//
+void an_process_capture_audio(uint8_t *b)
+{
+    int got_packet;
+
+    m_avpkt[ENAC].data = m_eb[ENAC];
+    m_avpkt[ENAC].size = INBUF_SIZE;
+    avcodec_fill_audio_frame(m_pFrameAudio,2,AV_SAMPLE_FMT_S16, \
+                             m_audio_buffer,m_sound_capture_buf_size,0);
+
+    if(avcodec_encode_audio2( m_pC[ENAC], &m_avpkt[ENAC], m_pFrameAudio, &got_packet ) == 0 )
+    {
+        if(got_packet)
+        {
+//          printf("Audio Size %d\n",m_avpkt[ENAC].size);
+            int64_t pts = m_audio_pts*m_audio_timestamp_delta;
+            m_audio_pts++;
+            pthread_mutex_lock( &mutex );
+            pes_audio_el_to_pes( m_avpkt[ENAC].data, m_avpkt[ENAC].size, pts, -1 );
+            cap_audio_pes_to_ts();
+            cap_audio_present();
+            force_pcr( pts );
+            pthread_mutex_unlock( &mutex );
+        }
+    }
+}
 
 //
 // Capture new image and associated sound
@@ -179,14 +225,7 @@ void *an_video_io_capturing_thread( void *arg )
     while( m_capturing == true )
     {
         val = read( m_i_fd, b, VIDEO_CAPTURE_SIZE );
-//        printf("VAL %d\n",val);
-        av_image_fill_arrays(m_pFrameVideo->data, m_pFrameVideo->linesize, b, AV_PIX_FMT_YUV420P, m_width, m_height,6);
-      //  an_dummy_frame( m_pFrameVideo, PAL_HEIGHT_CAPTURE, PAL_WIDTH_CAPTURE );
-        an_capture_video();
-      //  an_dummy_frame( m_pFrameVideo, PAL_HEIGHT_CAPTURE, PAL_WIDTH_CAPTURE );
-//       an_capture_video();
-//            printf("Image size %d\n",val);
-
+        an_process_captured_video_buffer(b,AV_PIX_FMT_YUV420P);
     }
     av_free(b);
 
@@ -225,19 +264,12 @@ void *an_video_mmap_capturing_thread( void *arg )
                 if( m_sws == NULL )
                 {
                     // No conversion needed
-                    av_image_fill_arrays(m_pFrameVideo->data,m_pFrameVideo->linesize,(uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUV420P, m_pFrameVideo->width, m_pFrameVideo->height,6);
-                    //avpicture_fill((AVPicture*)m_pFrameVideo, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUV420P, m_width, m_height);
+                    an_process_captured_video_buffer((uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUV420P);
                 }
                 else
                 {
-                    av_image_fill_arrays(m_pFrameVideoSrc->data,m_pFrameVideoSrc->linesize,(uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUYV422, m_pFrameVideoSrc->width, m_pFrameVideoSrc->height,6);
-                    //av_image_fill_arrays(m_pFrameVideo->data,m_pFrameVideo->linesize,(uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUYV422, m_pFrameVideo->width, m_pFrameVideo->height,6);
-                    //avpicture_fill( &m_PictureVideoSrc, (uint8_t *)m_buffers[buf.index].start, AV_PIX_FMT_YUYV422, m_width, m_height);
-                    sws_scale( m_sws, m_pFrameVideoSrc->data, m_pFrameVideoSrc->linesize, 0, m_height,
-                                      m_pFrameVideo->data,    m_pFrameVideo->linesize);
+                    an_process_captured_video_buffer((uint8_t *)m_buffers[buf.index].start,AV_PIX_FMT_YUYV422);
                 }
-                an_capture_video();
-//                process_image(buffers[buf.index].start, buf.bytesused);
                 ioctl(m_i_fd, VIDIOC_QBUF, &buf);
             }
         }
@@ -251,7 +283,7 @@ void *an_audio_capturing_thread( void *arg )
     {
         if(snd_pcm_readi( m_audio_handle, m_audio_buffer, m_sound_capture_buf_size/4) > 0)
         {
-            an_capture_audio();
+            an_process_capture_audio(m_audio_buffer);
         }
     }
     return arg;
@@ -374,7 +406,6 @@ int an_init_codecs( v4l2_format  fmt, int fps )
     m_video_timestamp_delta = (27000000.0/(300.0*fps));
     // New audio packet sent every 24 ms
     m_audio_timestamp_delta = ((0.024*27000000.0)/300.0);
-
     //
     // Video
     //
@@ -415,6 +446,7 @@ int an_init_codecs( v4l2_format  fmt, int fps )
             m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/3;
             m_pC[ENVC]->width              = fmt.fmt.pix.width;
             m_pC[ENVC]->height             = fmt.fmt.pix.height;
+            m_pC[ENVC]->sample_aspect_ratio = (AVRational){info.sw_codec.aspect[0],info.sw_codec.aspect[1]};
             m_pC[ENVC]->gop_size           = 12;
             m_pC[ENVC]->max_b_frames       = 0;
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
@@ -423,7 +455,7 @@ int an_init_codecs( v4l2_format  fmt, int fps )
             m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
             m_pC[ENVC]->thread_count       = 1;
         }else{
-            loggerf("HEVC Codec not found");
+            loggerf("MPEG4 Codec not found");
             return -1;
         }
     }
@@ -439,6 +471,7 @@ int an_init_codecs( v4l2_format  fmt, int fps )
             m_pC[ENVC]->rc_buffer_size     = info.video_bitrate/3;
             m_pC[ENVC]->width              = fmt.fmt.pix.width;
             m_pC[ENVC]->height             = fmt.fmt.pix.height;
+            m_pC[ENVC]->sample_aspect_ratio = (AVRational){info.sw_codec.aspect[0],info.sw_codec.aspect[1]};
             m_pC[ENVC]->gop_size           = 12;
             m_pC[ENVC]->max_b_frames       = 0;
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
@@ -452,7 +485,7 @@ int an_init_codecs( v4l2_format  fmt, int fps )
         }
     }
     if(avcodec_open2(m_pC[ENVC], codec, NULL)<0){
-            loggerf("Unable to open Video SW Codec");
+            loggerf("Unable to open Video SW Codec, bad params ?");
             return -1;
     }
     //
@@ -533,9 +566,34 @@ void an_configure_capture_card( int dev )
     CLEAR(crop);
     CLEAR(fmt);
 
+    // default settings
     m_width  = PAL_WIDTH_CAPTURE;
     m_height = PAL_HEIGHT_CAPTURE;
     fps = 25;// Picture Frames per second
+
+    //
+    // Black magic is not handled by the usual method
+    //
+    if(dev == CAP_DEV_TYPE_DL_MINI_RECORDER){
+        // Find the format of the connected device
+        m_width  = 1920;
+        m_height = 1080;
+        fps      = 25;
+        fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        fmt.fmt.pix.width       = m_width;
+        fmt.fmt.pix.height      = m_height;
+        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        // Format conversion will be required
+        m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_UYVY422,
+                                m_width, m_height, AV_PIX_FMT_YUV420P,
+                                SWS_BICUBIC, NULL,NULL, NULL);
+        an_set_image_buffer_sizes( AV_PIX_FMT_UYVY422 );
+        an_init_codecs( fmt, fps );
+        dl_init();
+        // All done
+        return;
+    }
 
     // Set the cropping, ignore any errors
     cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -543,7 +601,6 @@ void an_configure_capture_card( int dev )
     if (ioctl(m_i_fd, VIDIOC_CROPCAP, &cropcap)==0) {
             crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             crop.c    = cropcap.defrect; /* reset to default */
-
             ioctl(m_i_fd, VIDIOC_S_CROP, &crop);
     }
     //
@@ -560,7 +617,7 @@ void an_configure_capture_card( int dev )
 
         if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
         {
-            an_set_image_size( AV_PIX_FMT_YUV420P );
+            an_set_image_buffer_sizes( AV_PIX_FMT_YUV420P );
         }
         else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
@@ -579,7 +636,7 @@ void an_configure_capture_card( int dev )
             m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
                                     m_width, m_height, AV_PIX_FMT_YUV420P,
                                     SWS_BICUBIC, NULL,NULL, NULL);
-            an_set_image_size( AV_PIX_FMT_YUYV422 );
+            an_set_image_buffer_sizes( AV_PIX_FMT_YUYV422 );
         }
         else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
@@ -595,14 +652,14 @@ void an_configure_capture_card( int dev )
         fmt.fmt.pix.width       = m_width;
         fmt.fmt.pix.height      = m_height;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        fmt.fmt.pix.field       = V4L2_FIELD_NONE;
         if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
         {
             // Format conversion will be required
             m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
                                     m_width, m_height, AV_PIX_FMT_YUV420P,
                                     SWS_BICUBIC, NULL,NULL, NULL);
-            an_set_image_size( AV_PIX_FMT_YUYV422 );
+            an_set_image_buffer_sizes( AV_PIX_FMT_YUYV422 );
         }
         else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");

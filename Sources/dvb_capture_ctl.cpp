@@ -29,6 +29,7 @@
 #include "dvb_s2_if.h"
 #include "dvb.h"
 #include "an_capture.h"
+#include "bm_mod_interface.h"
 
 // Externally needed variables
 int m_i_fd;
@@ -247,6 +248,10 @@ int open_named_capture_device( const char *name )
     {
         return 0;
     }
+    if(strcmp(name,"DeckLink Mini Recorder") == 0 )
+    {
+        return 0;
+    }
     // Must be a /dev/video device
     for( int i = 0; i < MAX_CAPTURE_LIST_ITEMS; i++ )
     {
@@ -343,6 +348,11 @@ CapDevType get_device_type_from_name( const char *name )
             close(fd);
         }
     }
+    // See if it is a blackmagic card
+    if(strcmp(name,(const char*)"DeckLink Mini Recorder") == 0){
+        return CAP_DEV_TYPE_DL_MINI_RECORDER;
+    }
+
     // We have not found a valid device
     return CAP_DEV_TYPE_NONE;
 }
@@ -410,6 +420,16 @@ void populate_video_capture_list( CaptureCardList *list )
         }
         if(list->items >= MAX_CAPTURE_LIST_ITEMS ) return;
     }
+#ifdef _USE_SW_CODECS
+    // Do the same for Black magic cards
+    CaptureCardList bmcards;
+    int num = dl_list_devices( &bmcards );
+    for( int i = 0; i < num; i++ ){
+        sprintf(list->item[list->items],"%s",bmcards.item[i]);
+        list->items++;
+        if(list->items >= MAX_CAPTURE_LIST_ITEMS ) return;
+    }
+#endif
 }
 //
 // Given a file id get the list of input names
@@ -516,13 +536,15 @@ void dvb_cap_ctl( void )
     //
     // Get the capabilities
     //
-    struct v4l2_capability cap;
-    if( ioctl(	m_i_fd,VIDIOC_QUERYCAP, &cap) < 0 ){
-        logger("CAP Query Error");
-    }
-    else{
-        loggerf("Driver: %s, Card: %s, Device: %s",cap.driver,cap.card,m_v4l_capture_device);
+    if( m_i_fd > 0 ){
+        struct v4l2_capability cap;
+        if( ioctl(	m_i_fd,VIDIOC_QUERYCAP, &cap) < 0 ){
+            logger("CAP Query Error");
+        }
+        else{
+            loggerf("Driver: %s, Card: %s, Device: %s",cap.driver,cap.card,m_v4l_capture_device);
 //            if( cap.capabilities & V4L2_CAP_READWRITE) loggerf("R/W supported");
+        }
     }
 
     if( info.video_capture_device_class == DVB_FIREWIRE  ){
@@ -778,10 +800,20 @@ void dvb_cap_ctl( void )
         an_configure_capture_card(CAP_DEV_TYPE_UVCVIDEO);
     }
 
+    if(info.cap_dev_type == CAP_DEV_TYPE_DL_MINI_RECORDER){
+        info.video_bitrate     = calculate_video_bitrate();
+        info.audio_bitrate     = 192000;
+        info.sw_codec.using_sw_codec = true;
+        info.sw_codec.aspect[0] = 16;
+        info.sw_codec.aspect[1] = 9;
+        dvb_config_save_and_update( &info );
+        an_configure_capture_card(CAP_DEV_TYPE_DL_MINI_RECORDER);
+    }
+
     if(info.cap_format.video_format == CAP_PAL ){
        // dvb_cap_set_analog_standard( m_i_fd, V4L2_STD_PAL );
-        info.sw_codec.aspect[0] = 4;
-        info.sw_codec.aspect[1] = 3;
+       //info.sw_codec.aspect[0] = 4;
+       //info.sw_codec.aspect[1] = 3;
     }
 
     if(info.cap_format.video_format == CAP_NTSC ){
@@ -835,6 +867,10 @@ void dvb_close_capture_device(void)
 {
     sys_config info;
     dvb_config_get( &info );
+    if(info.cap_dev_type == CAP_DEV_TYPE_DL_MINI_RECORDER){
+        dl_close();
+        return;
+    }
 
     // No need to close the device if it is a UDP connection
     if(info.video_capture_device_class == DVB_UDP_TS)
@@ -859,7 +895,7 @@ int dvb_cap_init( void )
 {
     pes_process();// reset the modules
     pes_reset();
-    if( dvb_open_capture_device() > 0 )
+    if( dvb_open_capture_device() >= 0 )
     {
         m_cap_status = 0;
         dvb_cap_ctl();

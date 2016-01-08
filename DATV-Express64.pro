@@ -20,7 +20,8 @@ HEADERS  += mainwindow.h \
     DVB-T/dvb_t_sym.h \
     capturedialog.h \
     Sources/dvb_options.h \
-    Blackmagic/include/DeckLinkAPI.h
+    Blackmagic/include/DeckLinkAPI.h \
+    Blackmagic/include/bm_mod_interface.h
 
 FORMS    += mainwindow.ui \
             Capturedialog.ui
@@ -113,7 +114,8 @@ SOURCES += main.cpp \
     capturedialog.cpp \
     Blackmagic/include/DeckLinkAPIDispatch.cpp \
     Blackmagic/Capture.cpp \
-    Blackmagic/Config.cpp
+    Blackmagic/Config.cpp \
+    Blackmagic/dldiscover.cpp
 HEADERS += mainwindow.h \
     Sources/dvb_gui_if.h \
     Sources/dvb_config.h \

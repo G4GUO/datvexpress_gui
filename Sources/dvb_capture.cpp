@@ -84,7 +84,7 @@ int buffered_read( uchar *b, int len )
 
 void cap_purge(void)
 {
-    lseek(m_i_fd,0,SEEK_END);
+    if(m_i_fd > 0)lseek(m_i_fd,0,SEEK_END);
 }
 
 //

@@ -36,6 +36,9 @@
 #include "DeckLinkAPI.h"
 #include "Capture.h"
 #include "Config.h"
+#include "an_capture.h"
+
+IDeckLinkIterator* g_deckLinkIterator = NULL;
 
 static pthread_mutex_t	g_sleepMutex;
 static pthread_cond_t	g_sleepCond;
@@ -46,6 +49,7 @@ static bool				g_do_exit = false;
 static BMDConfig		g_config;
 
 static IDeckLinkInput*	g_deckLinkInput = NULL;
+static DeckLinkCaptureDelegate* g_delegate = NULL;
 
 static unsigned long	g_frameCount = 0;
 
@@ -85,67 +89,21 @@ ULONG DeckLinkCaptureDelegate::Release(void)
 
 HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDeckLinkAudioInputPacket* audioFrame)
 {
-	IDeckLinkVideoFrame*				rightEyeFrame = NULL;
-	IDeckLinkVideoFrame3DExtensions*	threeDExtensions = NULL;
-	void*								frameBytes;
+    void*								videoFrameBytes;
 	void*								audioFrameBytes;
-
 	// Handle Video Frame
 	if (videoFrame)
 	{
-		// If 3D mode is enabled we retreive the 3D extensions interface which gives.
-		// us access to the right eye frame by calling GetFrameForRightEye() .
-		if ( (videoFrame->QueryInterface(IID_IDeckLinkVideoFrame3DExtensions, (void **) &threeDExtensions) != S_OK) ||
-			(threeDExtensions->GetFrameForRightEye(&rightEyeFrame) != S_OK))
-		{
-			rightEyeFrame = NULL;
-		}
+        if(videoFrame->GetFlags() & bmdFrameHasNoInputSource){
 
-		if (threeDExtensions)
-			threeDExtensions->Release();
-
-		if (videoFrame->GetFlags() & bmdFrameHasNoInputSource)
-		{
-			printf("Frame received (#%lu) - No input signal detected\n", g_frameCount);
-		}
-		else
-		{
-			const char *timecodeString = NULL;
-			if (g_config.m_timecodeFormat != 0)
-			{
-				IDeckLinkTimecode *timecode;
-				if (videoFrame->GetTimecode(g_config.m_timecodeFormat, &timecode) == S_OK)
-				{
-					timecode->GetString(&timecodeString);
-				}
-			}
-
-			printf("Frame received (#%lu) [%s] - %s - Size: %li bytes\n",
-				g_frameCount,
-				timecodeString != NULL ? timecodeString : "No timecode",
-				rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame",
-				videoFrame->GetRowBytes() * videoFrame->GetHeight());
-
-			if (timecodeString)
-				free((void*)timecodeString);
-
-			if (g_videoOutputFile != -1)
-			{
-				videoFrame->GetBytes(&frameBytes);
-				write(g_videoOutputFile, frameBytes, videoFrame->GetRowBytes() * videoFrame->GetHeight());
-
-				if (rightEyeFrame)
-				{
-					rightEyeFrame->GetBytes(&frameBytes);
-					write(g_videoOutputFile, frameBytes, videoFrame->GetRowBytes() * videoFrame->GetHeight());
-				}
-			}
-		}
-
-		if (rightEyeFrame)
-			rightEyeFrame->Release();
-
-		g_frameCount++;
+        }else{
+            videoFrame->GetBytes(&videoFrameBytes);
+            int bytes = videoFrame->GetRowBytes();
+            int len = videoFrame->GetRowBytes() * videoFrame->GetHeight();
+            uint8_t *b = (uint8_t*)videoFrameBytes;
+            //an_process_captured_video_buffer((uint8_t*)b,AV_PIX_FMT_YUV422P);
+            an_process_captured_video_buffer((uint8_t*)videoFrameBytes,AV_PIX_FMT_UYVY422);
+        }
 	}
 
 	// Handle Audio Frame
@@ -154,16 +112,9 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 		if (g_audioOutputFile != -1)
 		{
 			audioFrame->GetBytes(&audioFrameBytes);
-			write(g_audioOutputFile, audioFrameBytes, audioFrame->GetSampleFrameCount() * g_config.m_audioChannels * (g_config.m_audioSampleDepth / 8));
+            //write(g_audioOutputFile, audioFrameBytes, audioFrame->GetSampleFrameCount() * g_config.m_audioChannels * (g_config.m_audioSampleDepth / 8));
 		}
 	}
-
-	if (g_config.m_maxFrames > 0 && videoFrame && g_frameCount >= g_config.m_maxFrames)
-	{
-		g_do_exit = true;
-		pthread_cond_signal(&g_sleepCond);
-	}
-
 	return S_OK;
 }
 
@@ -207,6 +158,49 @@ static void sigfunc(int signum)
 		g_do_exit = true;
 
 	pthread_cond_signal(&g_sleepCond);
+}
+//
+// Interface functions
+//
+int dl_init(void){
+    IDeckLink*		   deckLink = NULL;
+    IDeckLinkAttributes* deckLinkAttributes = NULL;
+    IDeckLinkDisplayModeIterator*	displayModeIterator = NULL;
+    IDeckLinkDisplayMode*			displayMode = NULL;
+
+    g_deckLinkIterator = CreateDeckLinkIteratorInstance();
+    if (!g_deckLinkIterator)
+    {
+        //fprintf(stderr, "This application requires the DeckLink drivers installed.\n");
+        return -1;
+    }
+    if(g_deckLinkIterator->Next(&deckLink) == S_OK){
+        if(deckLink->QueryInterface(IID_IDeckLinkInput, (void**)&g_deckLinkInput)==S_OK){
+            // We have an input device
+            g_deckLinkInput->GetDisplayModeIterator(&displayModeIterator);
+            displayModeIterator->Next(&displayMode);
+            // Configure the capture callback
+            g_delegate = new DeckLinkCaptureDelegate();
+            g_deckLinkInput->SetCallback(g_delegate);
+            g_deckLinkInput->EnableVideoInput(displayMode->GetDisplayMode(), bmdFormat8BitYUV, bmdVideoInputEnableFormatDetection);
+            g_deckLinkInput->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 2);
+            g_deckLinkInput->StartStreams();
+
+            // Check the card supports format detection
+           // if(deckLink->QueryInterface(IID_IDeckLinkAttributes, (void**)&deckLinkAttributes)==S_OK){
+
+//            }
+           return 0;
+        }
+    }
+    return -1;
+}
+void dl_close(void){
+    g_deckLinkIterator->Release();
+    g_deckLinkInput->StopStreams();
+    g_deckLinkInput->DisableAudioInput();
+    g_deckLinkInput->DisableVideoInput();
+    delete g_delegate;
 }
 
 int blackmagic_main(int argc, char *argv[])
