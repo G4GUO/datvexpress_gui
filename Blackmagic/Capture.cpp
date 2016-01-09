@@ -39,6 +39,9 @@
 #include "an_capture.h"
 
 IDeckLinkIterator* g_deckLinkIterator = NULL;
+uint8_t *g_audio_buffer;
+int g_audio_index;
+#define AU_S_LEN (7680)
 
 static pthread_mutex_t	g_sleepMutex;
 static pthread_cond_t	g_sleepCond;
@@ -109,11 +112,32 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 	// Handle Audio Frame
 	if (audioFrame)
 	{
-		if (g_audioOutputFile != -1)
-		{
-			audioFrame->GetBytes(&audioFrameBytes);
+        // Audio frames from the DeckLink are dependant on the frame rate
+        // This means they are not the size required for the codec.
+        // Therefore some buffering is required.
+        audioFrame->GetBytes(&audioFrameBytes);
+        int bytes = audioFrame->GetSampleFrameCount() * 2 * 2;
+        switch(g_audio_index){
+        case 0:
+            memcpy(&g_audio_buffer[0],audioFrameBytes,bytes);
+            an_process_capture_audio(g_audio_buffer, 4608);
+            g_audio_index = 1;
+            break;
+        case 1:
+            memcpy(&g_audio_buffer[AU_S_LEN],audioFrameBytes,bytes);
+            an_process_capture_audio(&g_audio_buffer[4608], 4608);
+            an_process_capture_audio(&g_audio_buffer[4608*2], 4608);
+            g_audio_index = 2;
+            break;
+        case 2:
+        default:
+            memcpy(&g_audio_buffer[AU_S_LEN*2],audioFrameBytes,bytes);
+            an_process_capture_audio(&g_audio_buffer[4608*3], 4608);
+            an_process_capture_audio(&g_audio_buffer[4608*4], 4608);
+            g_audio_index = 0;
+            break;
+        }
             //write(g_audioOutputFile, audioFrameBytes, audioFrame->GetSampleFrameCount() * g_config.m_audioChannels * (g_config.m_audioSampleDepth / 8));
-		}
 	}
 	return S_OK;
 }
@@ -168,12 +192,17 @@ int dl_init(void){
     IDeckLinkDisplayModeIterator*	displayModeIterator = NULL;
     IDeckLinkDisplayMode*			displayMode = NULL;
 
+
     g_deckLinkIterator = CreateDeckLinkIteratorInstance();
     if (!g_deckLinkIterator)
     {
         //fprintf(stderr, "This application requires the DeckLink drivers installed.\n");
         return -1;
     }
+    // Allocate memory for the audio re-buffering
+    g_audio_buffer = (uint8_t*)malloc(7680*3);
+    g_audio_index  = 0;
+
     if(g_deckLinkIterator->Next(&deckLink) == S_OK){
         if(deckLink->QueryInterface(IID_IDeckLinkInput, (void**)&g_deckLinkInput)==S_OK){
             // We have an input device

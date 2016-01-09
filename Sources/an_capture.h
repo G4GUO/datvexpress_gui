@@ -52,6 +52,6 @@ int an_init( v4l2_format *fmt );
 void an_start_capture(void);
 void an_stop_capture(void);
 void an_process_captured_video_buffer( uint8_t *b, AVPixelFormat fmt);
-void an_process_capture_audio(uint8_t *b);
+void an_process_capture_audio(uint8_t *b, int bytes);
 
 #endif // AN_CAPTURE_H

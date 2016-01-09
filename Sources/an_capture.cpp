@@ -46,7 +46,6 @@ static int m_audio_flag;
 // Picture width and height
 static int m_height;
 static int m_width;
-static bool m_use_format_conversion;
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -73,7 +72,6 @@ void an_set_image_buffer_sizes( AVPixelFormat src_fmt  )
     m_pFrameVideoSrc->height = m_height;
     m_pFrameVideoSrc->format = src_fmt;
     av_frame_get_buffer(m_pFrameVideoSrc,8);
-
 }
 
 void an_set_audio_size( void  )
@@ -179,14 +177,12 @@ void an_process_captured_video_buffer( uint8_t *b, AVPixelFormat fmt){
 //
 // Capture analoge sound
 //
-void an_process_capture_audio(uint8_t *b)
+void an_process_capture_audio(uint8_t *b, int bytes)
 {
     int got_packet;
-
     m_avpkt[ENAC].data = m_eb[ENAC];
     m_avpkt[ENAC].size = INBUF_SIZE;
-    avcodec_fill_audio_frame(m_pFrameAudio,2,AV_SAMPLE_FMT_S16, \
-                             m_audio_buffer,m_sound_capture_buf_size,0);
+    avcodec_fill_audio_frame(m_pFrameAudio,2,AV_SAMPLE_FMT_S16, b, bytes,0);
 
     if(avcodec_encode_audio2( m_pC[ENAC], &m_avpkt[ENAC], m_pFrameAudio, &got_packet ) == 0 )
     {
@@ -283,7 +279,7 @@ void *an_audio_capturing_thread( void *arg )
     {
         if(snd_pcm_readi( m_audio_handle, m_audio_buffer, m_sound_capture_buf_size/4) > 0)
         {
-            an_process_capture_audio(m_audio_buffer);
+            an_process_capture_audio(m_audio_buffer,m_sound_capture_buf_size);
         }
     }
     return arg;
@@ -389,7 +385,7 @@ void an_start_streaming_capture(int fd)
 //
 // Initilaise all the software codecs
 //
-int an_init_codecs( v4l2_format  fmt, int fps )
+int an_init_codecs( v4l2_format  fmt, AVPixelFormat pixfmt, int fps )
 {
     sys_config info;
 
@@ -410,6 +406,16 @@ int an_init_codecs( v4l2_format  fmt, int fps )
     // Video
     //
     AVCodec *codec = NULL;
+
+    if(pixfmt != AV_PIX_FMT_YUV420P){
+        // Format conversion will be required
+        m_sws = sws_getContext( m_width, m_height, pixfmt,
+                                m_width, m_height, AV_PIX_FMT_YUV420P,
+                                SWS_BICUBIC, NULL,NULL, NULL);
+        an_set_image_buffer_sizes( pixfmt );
+    }else{
+        m_sws = NULL;
+    }
 
     if(info.sw_codec.video_encoder_type == CODEC_MPEG2){
         codec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
@@ -452,7 +458,7 @@ int an_init_codecs( v4l2_format  fmt, int fps )
             m_pC[ENVC]->pix_fmt            = AV_PIX_FMT_YUV420P;
             m_pC[ENVC]->time_base          = (AVRational){1,fps};
             m_pC[ENVC]->ticks_per_frame    = 1;// MPEG2 & 4
-            m_pC[ENVC]->profile            = FF_PROFILE_MPEG2_MAIN;
+            m_pC[ENVC]->profile            = FF_PROFILE_H264_MAIN;
             m_pC[ENVC]->thread_count       = 1;
         }else{
             loggerf("MPEG4 Codec not found");
@@ -551,6 +557,29 @@ void an_setup_audio_capturing( void )
 //
 // Set up both the audio and video capturing on the card
 //
+void an_configure_sound( void ){
+    //
+    // Analogue sound capture
+    //
+    snd_pcm_hw_params_t *hw_params;
+
+    if(snd_pcm_open(&m_audio_handle, "pulse", SND_PCM_STREAM_CAPTURE, 0)< 0 )
+    {
+        loggerf("Unable to open sound device");
+        return;
+    }
+    unsigned int rate = 48000;
+    int r;
+    r = snd_pcm_hw_params_malloc(&hw_params);
+    r = snd_pcm_hw_params_any(m_audio_handle, hw_params);
+    r = snd_pcm_hw_params_set_access(m_audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    r = snd_pcm_hw_params_set_format(m_audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
+    r = snd_pcm_hw_params_set_rate_near(m_audio_handle, hw_params, &rate, 0);
+    r = snd_pcm_hw_params_set_channels(m_audio_handle, hw_params, 2);
+    r = snd_pcm_hw_params(m_audio_handle, hw_params);
+    snd_pcm_hw_params_free(hw_params);
+    r = snd_pcm_prepare(m_audio_handle);
+}
 
 void an_configure_capture_card( int dev )
 {
@@ -559,6 +588,7 @@ void an_configure_capture_card( int dev )
     struct v4l2_format  fmt;
     sys_config info;
     int input,fps;
+    AVPixelFormat pixfmt;
 
     dvb_config_get( &info );
 
@@ -584,12 +614,8 @@ void an_configure_capture_card( int dev )
         fmt.fmt.pix.height      = m_height;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
-        // Format conversion will be required
-        m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_UYVY422,
-                                m_width, m_height, AV_PIX_FMT_YUV420P,
-                                SWS_BICUBIC, NULL,NULL, NULL);
-        an_set_image_buffer_sizes( AV_PIX_FMT_UYVY422 );
-        an_init_codecs( fmt, fps );
+        pixfmt = AV_PIX_FMT_UYVY422;
+        an_init_codecs( fmt, AV_PIX_FMT_UYVY422, fps );
         dl_init();
         // All done
         return;
@@ -614,12 +640,10 @@ void an_configure_capture_card( int dev )
         fmt.fmt.pix.height      = m_height;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        pixfmt = AV_PIX_FMT_YUV420P;
 
-        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
+        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) != 0)
         {
-            an_set_image_buffer_sizes( AV_PIX_FMT_YUV420P );
-        }
-        else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
         }
     }
@@ -630,15 +654,10 @@ void an_configure_capture_card( int dev )
         fmt.fmt.pix.height      = m_height;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
-        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
+        pixfmt = AV_PIX_FMT_YUYV422;
+
+        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) != 0)
         {
-            // Format conversion will be required
-            m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
-                                    m_width, m_height, AV_PIX_FMT_YUV420P,
-                                    SWS_BICUBIC, NULL,NULL, NULL);
-            an_set_image_buffer_sizes( AV_PIX_FMT_YUYV422 );
-        }
-        else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
         }
     }
@@ -653,15 +672,10 @@ void an_configure_capture_card( int dev )
         fmt.fmt.pix.height      = m_height;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) == 0)
+        pixfmt = AV_PIX_FMT_YUYV422;
+
+        if (ioctl(m_i_fd, VIDIOC_S_FMT, &fmt) != 0)
         {
-            // Format conversion will be required
-            m_sws = sws_getContext( m_width, m_height, AV_PIX_FMT_YUYV422,
-                                    m_width, m_height, AV_PIX_FMT_YUV420P,
-                                    SWS_BICUBIC, NULL,NULL, NULL);
-            an_set_image_buffer_sizes( AV_PIX_FMT_YUYV422 );
-        }
-        else{
             logger("CAP ANALOGUE FORMAT NOT SUPPORTED");
         }
     }
@@ -693,31 +707,9 @@ void an_configure_capture_card( int dev )
         loggerf("CAP Error VIDIOC_S_PARM");
     }
 */
-    info.video_bitrate = calculate_video_bitrate();
+    an_configure_sound();
 
-    //
-    // Analogue sound capture
-    //
-    snd_pcm_hw_params_t *hw_params;
-
-    if(snd_pcm_open(&m_audio_handle, "pulse", SND_PCM_STREAM_CAPTURE, 0)< 0 )
-    {
-        loggerf("Unable to open sound device");
-        return;
-    }
-    unsigned int rate = 48000;
-    int r;
-    r = snd_pcm_hw_params_malloc(&hw_params);
-    r = snd_pcm_hw_params_any(m_audio_handle, hw_params);
-    r = snd_pcm_hw_params_set_access(m_audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
-    r = snd_pcm_hw_params_set_format(m_audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
-    r = snd_pcm_hw_params_set_rate_near(m_audio_handle, hw_params, &rate, 0);
-    r = snd_pcm_hw_params_set_channels(m_audio_handle, hw_params, 2);
-    r = snd_pcm_hw_params(m_audio_handle, hw_params);
-    snd_pcm_hw_params_free(hw_params);
-    r = snd_pcm_prepare(m_audio_handle);
-
-    an_init_codecs( fmt, fps );
+    an_init_codecs( fmt, pixfmt, fps );
     m_capturing = true;
     an_setup_video_capturing( m_i_fd );
     an_setup_audio_capturing();
