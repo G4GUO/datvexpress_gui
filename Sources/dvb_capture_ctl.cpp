@@ -742,7 +742,7 @@ void dvb_cap_ctl( void )
         }
         info.video_bitrate = video_bitrate;
         info.audio_bitrate = 192000;
-        info.sw_codec.video_encoder_type = CODEC_MPEG4;
+        info.sw_codec.video_encoder_type = CODEC_H264;
         info.sw_codec.audio_encoder_type = CODEC_LAOS;
         info.sw_codec.using_sw_codec = false;
 

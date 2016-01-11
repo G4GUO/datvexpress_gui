@@ -52,7 +52,7 @@ typedef struct{
 //
 // Codec information for S/W codecs
 //
-typedef enum{CODEC_MPEG2,CODEC_MPEG4,CODEC_HEVC}VideoCodec;
+typedef enum{CODEC_MPEG2,CODEC_H264,CODEC_HEVC}VideoCodec;
 typedef enum{CODEC_13818_3,CODEC_11172_3,CODEC_LAOS}AudioCodec;
 
 typedef struct{

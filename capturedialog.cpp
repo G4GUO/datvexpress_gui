@@ -31,14 +31,14 @@ void CaptureDialog::initial_parameter_display(void)
         ui->labelVideoCodec->hide();
         ui->radioButtonHEVC->hide();
         ui->radioButtonMPEG2->hide();
-        ui->radioButtonMPEG4->hide();
+        ui->radioButtonH264->hide();
     }else{
         switch(m_cfg.sw_codec.video_encoder_type){
         case CODEC_MPEG2:
             ui->radioButtonMPEG2->setChecked(true);
             break;
-        case CODEC_MPEG4:
-            ui->radioButtonMPEG4->setChecked(true);
+        case CODEC_H264:
+            ui->radioButtonH264->setChecked(true);
             break;
         case CODEC_HEVC:
             ui->radioButtonHEVC->setChecked(true);
@@ -55,8 +55,8 @@ void CaptureDialog::on_buttonBox_accepted()
 
     if(m_cfg.sw_codec.using_sw_codec == true){
         if(ui->radioButtonMPEG2->isChecked() == true) m_cfg.sw_codec.video_encoder_type = CODEC_MPEG2;
-        if(ui->radioButtonMPEG4->isChecked() == true) m_cfg.sw_codec.video_encoder_type = CODEC_MPEG4;
-        if(ui->radioButtonHEVC->isChecked() == true) m_cfg.sw_codec.video_encoder_type = CODEC_HEVC;
+        if(ui->radioButtonH264->isChecked() == true) m_cfg.sw_codec.video_encoder_type  = CODEC_H264;
+        if(ui->radioButtonHEVC->isChecked() == true) m_cfg.sw_codec.video_encoder_type  = CODEC_HEVC;
     }
     dvb_config_save( &m_cfg );
 }

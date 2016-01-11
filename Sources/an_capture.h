@@ -43,6 +43,21 @@ extern "C"
 #include <libavutil/samplefmt.h>
 }
 #endif
+//
+// Codec information structure
+//
+typedef struct{
+    uint32_t v_width;// Picture width
+    uint32_t v_height;// Picture height
+    int      v_fps;// Frames per second
+    int      v_fpf;// Fields per frame
+    int      v_br; // Video bitrate
+    int      v_ar[2];// Video aspect ration
+    int      a_br;// Audio bitrate
+    int      a_ch;// Number of Audio channels
+    int      a_bd;// Audio bit depth 16 bits
+    int      a_sr; // Audio sample rate
+}CodecParams;
 
 // Set the capture size of the image
 void an_configure_capture_card( int dev );

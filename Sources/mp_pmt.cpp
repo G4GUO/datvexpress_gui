@@ -164,13 +164,12 @@ void pmt_fmt( void )
     audio = 0x04;
 
     if( cfg.sw_codec.video_encoder_type == CODEC_MPEG2 )   video = 0x02;
-    if( cfg.sw_codec.video_encoder_type == CODEC_MPEG4 )   video = 0x10;
+    if( cfg.sw_codec.video_encoder_type == CODEC_H264 )    video = 0x10;
     if( cfg.sw_codec.video_encoder_type == CODEC_HEVC  )   video = 0x24;
 
     if( cfg.sw_codec.audio_encoder_type == CODEC_11172_3 ) audio = 0x03;
     if( cfg.sw_codec.audio_encoder_type == CODEC_13818_3 ) audio = 0x04;
     if( cfg.sw_codec.audio_encoder_type == CODEC_LAOS )    audio = 0x11;
-
     pmt_fmt( video, audio );
 
 }

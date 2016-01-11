@@ -90,9 +90,9 @@
      </widget>
     </item>
     <item>
-     <widget class="QRadioButton" name="radioButtonMPEG4">
+     <widget class="QRadioButton" name="radioButtonH264">
       <property name="text">
-       <string>MPEG4</string>
+       <string>H.264</string>
       </property>
      </widget>
     </item>

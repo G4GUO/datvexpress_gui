@@ -489,7 +489,7 @@ void post_ts( int64_t ts )
 //
 // Only called when using Software encoders
 //
-void force_pcr(int64_t ts)
+void check_pcr_against_audio_pts(int64_t ts)
 {
     if(m_pcr_sync)
     {
@@ -500,12 +500,19 @@ void force_pcr(int64_t ts)
     // Set the PCR to the value ts
     while(((m_pcr_clk + pcr_increment()) < (ts*300)) &&
           (ts_queue_percentage() < 30) &&
-          ((m_pcr_clk - m_pcr_clk_last) < PCR_INTERVAL))
-    {
+          ((m_pcr_clk - m_pcr_clk_last) < PCR_INTERVAL)){
         pad_stream();
     }
     if((m_pcr_clk - PCR_DELAY_SW) > (ts*300)) m_pcr_sync = 1;
 }
+int check_video_dts_against_pcr(int64_t ts)
+{
+    if((m_pcr_clk - PCR_DELAY_SW) > (ts*300))
+        return 1;
+    else
+        return 0;
+}
+
 //
 // We use the audio packet pts values to retain sync
 //
