@@ -503,6 +503,7 @@ int an_init_codecs( v4l2_format fmt, AVPixelFormat pixfmt )
             return -1;
         }
     }
+    m_cp.v_br = m_cp.v_br*0.6;
     if(info.sw_codec.video_encoder_type == CODEC_HEVC){
         codec = avcodec_find_encoder(AV_CODEC_ID_HEVC);
         if(codec != NULL){
@@ -522,6 +523,7 @@ int an_init_codecs( v4l2_format fmt, AVPixelFormat pixfmt )
             m_pC[ENVC]->ticks_per_frame    = m_cp.v_fpf == 2 ? 1 : 2;// MPEG2 & 4
             m_pC[ENVC]->profile            = FF_PROFILE_HEVC_MAIN;
             m_pC[ENVC]->thread_count       = 8;
+            av_opt_set(m_pC[ENVC]->priv_data, "preset", "fast", 0);
         }else{
             loggerf("HEVC Codec not found");
             return -1;
